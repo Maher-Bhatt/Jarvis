@@ -6,6 +6,8 @@
 ![Platform Windows](https://img.shields.io/badge/platform-Windows-ff0080?style=flat-square&labelColor=black)
 ![Voice AI](https://img.shields.io/badge/voice-AI%20Assistant-ff8800?style=flat-square&labelColor=black)
 
+![JARVIS HUD — Idle](screenshots/hero.jpg)
+
 A Windows-native, voice-first AI personal assistant inspired by the JARVIS from Iron Man — built from scratch in Python and a single HTML file.
 
 Lives quietly in the background. Wakes on **"Hey JARVIS"**. Speaks in a neural British voice. Manages your day, runs your code, hacks your hashes, and reads your calendar — all through one Iron Man–style HUD.
@@ -65,6 +67,19 @@ Lives quietly in the background. Wakes on **"Hey JARVIS"**. Speaks in a neural B
 - Code blocks with one-click COPY button
 - Typewriter animation on JARVIS replies
 - Animated grid background, drifting scan beam, wake-flash on activation
+
+---
+
+## The HUD reacts to JARVIS's state
+
+The entire interface — orb, panels, frequency bars, brand mark, status pill, scan beam — shifts hue together depending on what JARVIS is doing.
+
+| Standby (white) | Listening (magenta) | Speaking (lime) |
+|:---:|:---:|:---:|
+| ![Standby](screenshots/hero.jpg) | ![Listening](screenshots/hud-listening.jpg) | ![Speaking](screenshots/hud-speaking.jpg) |
+| idle, awaiting orders | mic engaged, capturing voice | answering, mid-reply |
+
+There's also a fourth state — **PROCESSING** (electric orange) — that flashes for the second or two JARVIS spends thinking before it speaks.
 
 ---
 
