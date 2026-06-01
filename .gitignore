@@ -1,0 +1,48 @@
+# ── Sensitive: API keys, tokens, credentials ──
+config.py
+data/google_credentials.json
+data/google_token.pickle
+data/spotify_token.json
+data/vault.json
+data/contacts.json
+
+# ── Personal data ──
+data/memory.json
+data/history.json
+data/tasks.json
+data/reminders.json
+data/notes.json
+data/wordlist.txt
+data/rockyou.txt
+data/scripts/
+
+# ── Logs ──
+data/jarvis.log
+data/listener.log
+data/launcher.log
+*.log
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+venv/
+.venv/
+env/
+
+# ── OS / IDE ──
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+.spyderproject
+
+# ── Build / temp ──
+build/
+dist/
+*.tmp

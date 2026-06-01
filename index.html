@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>J.A.R.V.I.S.</title>
+<style>
+/* ════════════════════════════════════════════════════════════════
+   J.A.R.V.I.S. — Monochrome + Neon Accent Theme
+   Black & white base, single state-driven accent color that
+   shifts through magenta / orange / lime as JARVIS reacts.
+   ════════════════════════════════════════════════════════════════ */
+
+:root{
+  --bg:        #000000;
+  --bg-elev:   #0a0a0d;
+  --bg-panel:  #08080b;
+  --text:      #ffffff;
+  --text-dim:  #888a90;
+  --frame:     rgba(255,255,255,0.14);
+  --frame-strong: rgba(255,255,255,0.32);
+
+  /* Neon accent palette — picked per state */
+  --magenta:   #ff0080;
+  --pink:      #ff5dbe;
+  --violet:    #a259ff;
+  --lime:      #00ff80;
+  --aqua:      #00ffd5;
+  --orange:    #ff8800;
+  --yellow:    #ffd400;
+  --red:       #ff3344;
+
+  /* Current state accent (JS swaps these via body class) */
+  --accent:       #ffffff;
+  --accent-glow:  rgba(255,255,255,0.35);
+  --accent-soft:  rgba(255,255,255,0.08);
+}
+
+/* state-driven accents */
+body.mode-idle      { --accent:#ffffff; --accent-glow:rgba(255,255,255,0.30); --accent-soft:rgba(255,255,255,0.06); }
+body.mode-listening { --accent:#ff0080; --accent-glow:rgba(255,0,128,0.45);   --accent-soft:rgba(255,0,128,0.10);   }
+body.mode-thinking  { --accent:#ff8800; --accent-glow:rgba(255,136,0,0.50);   --accent-soft:rgba(255,136,0,0.10);   }
+body.mode-speaking  { --accent:#00ff80; --accent-glow:rgba(0,255,128,0.45);   --accent-soft:rgba(0,255,128,0.10);   }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Inter","Segoe UI","Rajdhani",system-ui,sans-serif;
+  letter-spacing:0.3px;
+  user-select:none;
+  transition: background .8s ease;
+}
+
+/* Animated grid background — pure black with slow-drift white grid */
+body::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(0deg,  rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size:48px 48px;
+  animation: gridDrift 80s linear infinite;
+}
+@keyframes gridDrift{ to { background-position:48px 48px; } }
+
+/* Radial accent glow follows state */
+body::after{
+  content:"";position:fixed;inset:0;z-index:1;pointer-events:none;
+  background: radial-gradient(circle at 50% 55%, var(--accent-soft) 0%, transparent 55%);
+  transition: background .8s ease;
+}
+
+/* Subtle scanline overlay */
+.scanlines{
+  position:fixed;inset:0;z-index:30;pointer-events:none;
+  background:repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.012) 0px,
+    rgba(255,255,255,0.012) 1px,
+    transparent 2px,
+    transparent 4px);
+  mix-blend-mode:screen;opacity:.4;
+}
+
+/* Drifting accent-color scan beam */
+.scan{
+  position:fixed;left:0;right:0;height:120px;z-index:29;pointer-events:none;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    var(--accent-soft) 50%,
+    transparent 100%);
+  animation:scanmove 9s linear infinite;
+  mix-blend-mode:screen;
+  transition: background .8s ease;
+}
+@keyframes scanmove{
+  0%   { transform:translateY(-150px); }
+  100% { transform:translateY(110vh); }
+}
+
+/* ── Top bar ────────────────────────────────────── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:62px;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;
+  border-bottom:1px solid var(--frame);
+  background:linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.2));
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{
+  width:36px;height:36px;
+  border:2px solid var(--accent);
+  position:relative;border-radius:4px;
+  box-shadow: 0 0 18px var(--accent-glow),
+              inset 0 0 14px var(--accent-glow);
+  transition: border-color .55s ease, box-shadow .55s ease, transform 6s ease-in-out;
+  animation: brandSway 8s ease-in-out infinite;
+}
+@keyframes brandSway{
+  0%,100% { transform: rotate(0deg); }
+  50%     { transform: rotate(1.5deg); }
+}
+.brand-mark::before,.brand-mark::after{
+  content:"";position:absolute;background:var(--accent);
+  box-shadow:0 0 6px var(--accent);
+  transition: background .55s ease;
+}
+.brand-mark::before{ top:50%;left:8%;right:8%;height:2px;transform:translateY(-50%); }
+.brand-mark::after { left:50%;top:8%;bottom:8%;width:2px;transform:translateX(-50%); }
+.brand h1{
+  font-size:20px;font-weight:700;letter-spacing:6px;color:var(--text);
+  text-shadow: 0 0 14px var(--accent-glow);
+  transition: text-shadow .55s ease;
+}
+.brand .sub{
+  font-size:9px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
+}
+.top-meta{
+  display:flex;gap:22px;font-size:11px;color:var(--text-dim);
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+.top-meta .v{color:var(--text)}
+
+/* ── Status pill ───────────────────────────────── */
+.pill{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%);
+  padding:8px 22px;font-size:10px;letter-spacing:6px;
+  color:var(--accent);
+  border:1px solid var(--accent);
+  border-radius:999px;background:rgba(0,0,0,0.7);
+  text-transform:uppercase;z-index:25;
+  box-shadow: 0 0 24px var(--accent-glow), inset 0 0 12px var(--accent-soft);
+  transition: color .55s ease, border-color .55s ease, box-shadow .55s ease;
+  font-weight:600;
+}
+.pill .dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:currentColor;margin-right:10px;vertical-align:middle;
+  box-shadow:0 0 14px currentColor;
+  animation:dotpulse 1.4s ease-in-out infinite;
+}
+@keyframes dotpulse{
+  50% { opacity:.3; transform:scale(.7); }
+}
+
+/* ── Corner brackets ───────────────────────────── */
+.corner{
+  position:fixed;width:60px;height:60px;z-index:18;pointer-events:none;
+  border:2px solid var(--accent);
+  transition: border-color .55s ease;
+  opacity:.45;
+}
+.corner.tl{top:74px;left:18px;border-right:none;border-bottom:none}
+.corner.tr{top:74px;right:18px;border-left:none;border-bottom:none}
+.corner.bl{bottom:18px;left:18px;border-right:none;border-top:none}
+.corner.br{bottom:18px;right:18px;border-left:none;border-top:none}
+
+/* ── HUD side panels ────────────────────────────── */
+.hud{
+  position:fixed;width:280px;z-index:15;
+  border:1px solid var(--frame);
+  background: linear-gradient(135deg, rgba(8,8,11,0.92), rgba(0,0,0,0.95));
+  padding:14px 16px;font-size:12px;
+  clip-path:polygon(0 12px,12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px));
+  box-shadow:
+    0 0 30px var(--accent-glow),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  transition: box-shadow .8s ease;
+}
+.hud.left { top:115px; left:24px; }
+.hud.right{ top:115px; right:24px; max-height: calc(100vh - 230px); overflow-y:auto; }
+.hud.right::-webkit-scrollbar{ width:4px; }
+.hud.right::-webkit-scrollbar-thumb{ background:var(--frame); }
+
+.hud .title{
+  font-size:9px;letter-spacing:3.5px;color:var(--accent);
+  text-transform:uppercase;margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center;
+  transition: color .55s ease;
+  font-weight:700;
+}
+.hud .title::after{
+  content:"";flex:1;height:1px;
+  background: linear-gradient(to right, var(--accent), transparent);
+  margin-left:10px;
+  transition: background .55s ease;
+}
+
+.row{display:flex;justify-content:space-between;padding:3px 0;color:var(--text-dim);font-size:11px;letter-spacing:.5px}
+.row .v{color:var(--text)}
+.row .v.ok{color:var(--lime)}
+.row .v.warn{color:var(--orange)}
+.row .v.bad{color:var(--red)}
+.row .v.cy{color:var(--accent); transition: color .55s ease}
+
+.bar{
+  display:flex;align-items:center;gap:10px;margin:5px 0;
+  font-size:9px;letter-spacing:2px;color:var(--text-dim);
+}
+.bar .lbl{width:30px}
+.bar .num{width:38px;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+.bar .track{
+  flex:1;height:5px;background:rgba(255,255,255,0.05);
+  border:1px solid var(--frame);position:relative;overflow:hidden;border-radius:2px;
+}
+.bar .fill{
+  position:absolute;left:0;top:0;bottom:0;width:0%;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  box-shadow:0 0 8px var(--accent-glow);
+  transition: width .35s ease, background .55s ease;
+}
+.bar.warn .fill{background:linear-gradient(90deg, rgba(255,136,0,0.3), var(--orange));}
+.bar.bad  .fill{background:linear-gradient(90deg, rgba(255,51,68,0.3), var(--red));}
+
+/* tags */
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--frame);
+  color:var(--text);padding:2px 7px;border-radius:2px;
+  font-size:9px;letter-spacing:1.5px;font-weight:600;
+  transition: all .2s;
+}
+.tag:hover{
+  border-color:var(--accent);color:var(--accent);
+  box-shadow:0 0 8px var(--accent-glow);
+}
+
+/* dials */
+.dial{position:relative;width:100%;height:110px;margin-top:6px}
+.dial canvas{width:100%;height:100%}
+
+/* ── Buttons (Quick / Tactical) — shimmer on hover ── */
+.qbtn{
+  width:100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  color:var(--text);
+  border:1px solid var(--frame);
+  padding:8px 10px;border-radius:2px;font-size:10px;
+  letter-spacing:2.5px;text-transform:uppercase;
+  margin-top:4px;cursor:pointer;font-family:inherit;font-weight:600;
+  position:relative;overflow:hidden;
+  transition: transform .18s ease, border-color .18s, color .18s, box-shadow .18s;
+}
+.qbtn::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+  transform:translateX(-110%);
+  transition:transform .45s ease;
+  pointer-events:none;
+}
+.qbtn:hover{
+  border-color:var(--accent);color:var(--accent);
+  transform:translateX(2px);
+  box-shadow:0 0 12px var(--accent-glow);
+}
+.qbtn:hover::before{ transform:translateX(110%); }
+.qbtn:active{ transform:translateX(2px) scale(0.985); }
+select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
+
+/* Data telemetry stream */
+.stream{
+  margin-top:8px;font-family:"JetBrains Mono","Consolas",monospace;
+  font-size:9.5px;color:var(--text-dim);line-height:1.5;
+  height:104px;overflow:hidden;border-top:1px dashed var(--frame);padding-top:6px;
+}
+.stream div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:streamIn .2s ease-out}
+.stream div.hot{color:var(--accent); transition: color .55s ease}
+.stream div.warn{color:var(--orange)}
+@keyframes streamIn{ from{opacity:0; transform:translateX(-8px)} to{opacity:1; transform:translateX(0)} }
+
+/* ── Center canvas (the orb) ───────────────────── */
+#orb{
+  position:fixed;inset:0;z-index:4;cursor:pointer;
+  width:100vw;height:100vh;
+}
+
+/* ── Readout transcript ────────────────────────── */
+.readout{
+  position:fixed;bottom:138px;left:50%;transform:translateX(-50%);
+  width:min(880px,92vw);max-height:46vh;overflow-y:auto;overflow-x:hidden;
+  z-index:12;text-align:left;
+  scrollbar-width:thin;scrollbar-color:var(--frame) transparent;
+  padding:6px 8px;
+}
+.readout::-webkit-scrollbar{width:5px}
+.readout::-webkit-scrollbar-thumb{background:var(--frame);border-radius:3px}
+.readout .line{
+  display:block;margin:5px 0;padding:10px 14px 10px 18px;
+  border:1px solid var(--frame);
+  background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(0,0,0,0.6) 100%);
+  font-size:13px;line-height:1.55;color:var(--text);
+  word-wrap:break-word;white-space:pre-wrap;
+  position:relative;
+  border-radius:2px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+  animation: lineIn .28s ease-out;
+}
+.readout .line::before{
+  content:""; position:absolute; left:0; top:6%; bottom:6%; width:3px;
+  background:var(--accent); box-shadow:0 0 10px var(--accent-glow);
+}
+.readout .line.user        { color:var(--text); }
+.readout .line.user::before{ background:#ffffff; box-shadow:0 0 8px rgba(255,255,255,0.4); }
+.readout .line.jarvis      { color:var(--text); }
+.readout .line.jarvis::before{ background:var(--lime); box-shadow:0 0 8px rgba(0,255,128,0.5); }
+.readout .line.error       { color:var(--red); border-color:rgba(255,51,68,0.45); }
+.readout .line.error::before{ background:var(--red); box-shadow:0 0 10px rgba(255,51,68,0.55); }
+@keyframes lineIn{
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* Code blocks inside the readout */
+.codeBlock{
+  margin:6px 0;border:1px solid var(--frame-strong);
+  background:#000;position:relative;border-radius:2px;
+}
+.codeHead{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:5px 10px;background:rgba(255,255,255,0.04);
+  border-bottom:1px solid var(--frame);
+  font-size:9.5px;letter-spacing:2px;color:var(--accent);
+  text-transform:uppercase;font-family:"JetBrains Mono","Consolas",monospace;
+  font-weight:700;
+}
+.codeCopy{
+  background:transparent;border:1px solid var(--frame-strong);
+  color:var(--text);font-size:9.5px;letter-spacing:1px;
+  padding:3px 9px;border-radius:2px;cursor:pointer;
+  font-family:inherit;font-weight:700;
+  transition: all .18s;
+}
+.codeCopy:hover{ background:var(--accent); color:#000; border-color:var(--accent); }
+.codeCopy.copied{ color:#000; background:var(--lime); border-color:var(--lime); }
+.codeBlock pre{
+  margin:0;padding:12px 14px;
+  font-family:"JetBrains Mono","Consolas","Courier New",monospace;
+  font-size:12px;line-height:1.55;color:#e6f4fb;
+  white-space:pre;overflow-x:auto;max-height:340px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--frame) transparent;
+}
+.codeBlock pre::-webkit-scrollbar{height:5px;width:5px}
+.codeBlock pre::-webkit-scrollbar-thumb{background:var(--frame)}
+
+/* ── Bottom audio wave ─────────────────────────── */
+#wave{
+  position:fixed;bottom:96px;left:0;right:0;height:34px;
+  z-index:8;pointer-events:none;width:100vw;
+}
+
+/* ── Composer ──────────────────────────────────── */
+.composer{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;align-items:center;width:min(740px,92vw);
+  z-index:25;
+}
+#input{
+  flex:1;background:rgba(0,0,0,0.85);
+  border:1px solid var(--frame-strong);color:var(--text);
+  padding:14px 22px;font-size:14px;font-family:inherit;outline:none;
+  letter-spacing:0.5px;
+  clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,14px 100%,0 50%);
+  transition: border-color .25s, box-shadow .25s;
+}
+#input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 24px var(--accent-glow);
+}
+#input::placeholder{color:var(--text-dim);letter-spacing:2px;font-size:12px}
+
+.iconBtn{
+  width:46px;height:46px;border:1px solid var(--frame-strong);
+  background:rgba(0,0,0,0.85);color:var(--text);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,14px 100%,0 50%);
+  transition: all .2s;
+}
+.iconBtn:hover{ color:var(--accent); border-color:var(--accent); box-shadow:0 0 14px var(--accent-glow); }
+#micBtn.active{ color:var(--lime); border-color:var(--lime); box-shadow:0 0 18px rgba(0,255,128,0.55); }
+#stopBtn{color:var(--red);border-color:rgba(255,51,68,0.5)}
+#stopBtn:hover{color:#ff7080;border-color:var(--red);box-shadow:0 0 14px rgba(255,51,68,0.5)}
+
+/* ── Drag-and-drop overlay ─────────────────────── */
+#dropZone{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(0,0,0,0.95);
+  border:4px dashed var(--accent);
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(6px);
+  pointer-events:none;
+}
+#dropZone.active{display:flex}
+.dropContent{text-align:center;color:var(--accent)}
+.dropIcon{font-size:88px;line-height:1;margin-bottom:12px;
+          text-shadow:0 0 30px var(--accent-glow);
+          animation: dropBob 1.4s ease-in-out infinite;}
+@keyframes dropBob{ 50% { transform:translateY(-8px); } }
+.dropText{font-size:30px;letter-spacing:10px;font-weight:700}
+.dropHint{font-size:11px;color:var(--text-dim);letter-spacing:3px;
+          margin-top:10px;text-transform:uppercase}
+
+/* ── Attachment chip strip ─────────────────────── */
+#attachStrip{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  width:min(740px,92vw);
+  display:flex;gap:8px;z-index:14;flex-wrap:wrap;
+}
+.attach-chip{
+  background:rgba(0,0,0,0.92);
+  border:1px solid var(--accent);
+  padding:5px 10px;display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--text);border-radius:2px;
+  box-shadow:0 0 12px var(--accent-glow);
+  animation:lineIn .2s ease-out;
+}
+.attach-chip img{
+  height:30px;width:30px;object-fit:cover;border-radius:2px;
+  border:1px solid var(--accent);
+}
+.attach-chip .name{
+  max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.attach-chip button{
+  background:none;border:none;color:var(--text-dim);cursor:pointer;
+  font-size:14px;line-height:1;padding:0 2px;
+}
+.attach-chip button:hover{color:var(--red)}
+
+/* ── Footer tag ────────────────────────────────── */
+.foot-tag{
+  position:fixed;bottom:6px;left:50%;transform:translateX(-50%);
+  z-index:6;pointer-events:none;
+  font-size:10px;letter-spacing:14px;color:rgba(255,255,255,0.15);
+  font-weight:700;
+}
+
+/* ── Boot sequence overlay ─────────────────────── */
+.boot{
+  position:fixed;inset:0;z-index:60;background:#000;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  font-family:"JetBrains Mono","Consolas",monospace;color:#fff;
+  letter-spacing:1px;font-size:12px;
+  transition: opacity .8s;
+}
+.boot pre{color:#fff;font-size:11px;line-height:1.2;margin-bottom:20px;
+          text-shadow:0 0 12px rgba(255,255,255,0.5)}
+.boot .lines{max-width:560px;width:100%;padding:0 24px}
+.boot .line{margin:2px 0;opacity:0;animation:fadein .3s forwards}
+.boot .line .ok{color:var(--lime)}
+.boot.hide{opacity:0;pointer-events:none}
+@keyframes fadein{ to { opacity:1 } }
+
+/* ── Reticle that follows cursor ───────────────── */
+.reticle{
+  position:fixed;width:60px;height:60px;z-index:32;pointer-events:none;
+  border:1px solid var(--accent);border-radius:50%;
+  transform:translate(-50%,-50%);
+  mix-blend-mode:screen;
+  display:none;opacity:.45;
+  transition: border-color .55s ease;
+}
+.reticle::before,.reticle::after{
+  content:"";position:absolute;background:var(--accent);
+  transition: background .55s ease;
+}
+.reticle::before{left:50%;top:-8px;bottom:-8px;width:1px;transform:translateX(-50%)}
+.reticle::after{top:50%;left:-8px;right:-8px;height:1px;transform:translateY(-50%)}
+
+/* ── Wake flash effect (fires on wake word) ────── */
+@keyframes wakeFlash{
+  0%   { opacity:0; }
+  20%  { opacity:.75; }
+  100% { opacity:0; }
+}
+.wake-flash{
+  position:fixed;inset:0;z-index:55;pointer-events:none;
+  background: radial-gradient(circle at 50% 50%, var(--accent-soft) 0%, transparent 65%);
+  animation: wakeFlash .9s ease-out;
+}
+
+/* ── Typewriter cursor for JARVIS replies ──────── */
+.typing::after{
+  content:"▮";
+  margin-left:2px;
+  color:var(--lime);
+  animation: blink .8s steps(1) infinite;
+}
+@keyframes blink{ 50% { opacity:0 } }
+</style>
+</head>
+<body class="mode-idle">
+
+<div class="scanlines"></div>
+<div class="scan"></div>
+
+<!-- BOOT SEQUENCE -->
+<div class="boot" id="boot">
+  <pre>
+    ╔═══════════════════════════════════════════════════════╗
+    ║   J . A . R . V . I . S .   v 5 . 0 0                 ║
+    ║   Just A Rather Very Intelligent System               ║
+    ╚═══════════════════════════════════════════════════════╝</pre>
+  <div class="lines" id="bootLines"></div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div>
+      <h1>J.A.R.V.I.S.</h1>
+      <div class="sub">Just A Rather Very Intelligent System</div>
+    </div>
+  </div>
+  <div class="top-meta">
+    <div>OPER <span class="v" id="topOwner">Sir</span></div>
+    <div>LOC <span class="v" id="topLoc">—</span></div>
+    <div>SYS <span class="v" id="topSys">v5.00</span></div>
+    <div>NET <span class="v ok" id="topNet">ONLINE</span></div>
+    <div><span class="v cy" id="topClock">00:00:00</span></div>
+  </div>
+</div>
+
+<!-- STATUS PILL -->
+<div class="pill" id="statusPill"><span class="dot"></span><span id="statusText">STANDBY</span></div>
+
+<!-- CORNERS -->
+<div class="corner tl"></div>
+<div class="corner tr"></div>
+<div class="corner bl"></div>
+<div class="corner br"></div>
+
+<!-- LEFT HUD -->
+<div class="hud left" id="leftHud">
+  <div class="title">SYS DIAGNOSTICS</div>
+  <div class="bar"><div class="lbl">CPU</div><div class="track"><div class="fill" id="cpuFill"></div></div><div class="num" id="cpuNum">0%</div></div>
+  <div class="bar"><div class="lbl">RAM</div><div class="track"><div class="fill" id="ramFill"></div></div><div class="num" id="ramNum">0%</div></div>
+  <div class="bar"><div class="lbl">DSK</div><div class="track"><div class="fill" id="dskFill"></div></div><div class="num" id="dskNum">0%</div></div>
+  <div class="bar"><div class="lbl">NET</div><div class="track"><div class="fill" id="netFill"></div></div><div class="num" id="netNum">--</div></div>
+  <div class="bar"><div class="lbl">PWR</div><div class="track"><div class="fill" id="pwrFill"></div></div><div class="num" id="pwrNum">--</div></div>
+
+  <div class="title" style="margin-top:14px">CORE SUBSYSTEMS</div>
+  <div class="row"><span>GROQ AI</span><span class="v" id="sGroq">…</span></div>
+  <div class="row"><span>OLLAMA</span><span class="v" id="sOllama">…</span></div>
+  <div class="row"><span>VOICE</span><span class="v ok">en-GB-Ryan</span></div>
+  <div class="row"><span>MIC LINK</span><span class="v" id="sMic">stand-by</span></div>
+  <div class="row"><span>MEM BANK</span><span class="v cy" id="sMem">0</span></div>
+  <div class="row"><span>UPTIME</span><span class="v cy" id="sUp">0s</span></div>
+
+  <div class="title" style="margin-top:14px">EXPERTISE</div>
+  <div class="tags">
+    <span class="tag">CYBER</span><span class="tag">PWN</span>
+    <span class="tag">PY</span><span class="tag">TS</span>
+    <span class="tag">REACT</span><span class="tag">NODE</span>
+    <span class="tag">RUST</span><span class="tag">AI</span>
+    <span class="tag">OSINT</span><span class="tag">CTF</span>
+  </div>
+</div>
+
+<!-- RIGHT HUD -->
+<div class="hud right" id="rightHud">
+  <div class="title">NAVIGATION DIAL</div>
+  <div class="dial"><canvas id="dial"></canvas></div>
+
+  <div class="title" style="margin-top:8px">REACTOR OUTPUT</div>
+  <div class="dial" style="height:80px"><canvas id="gauge"></canvas></div>
+
+  <div class="title" style="margin-top:8px">TODAY</div>
+  <div id="calWidget" style="font-size:11px;line-height:1.5;color:var(--text-dim);">
+    <div id="calMailLine" style="color:var(--accent); transition:color .55s ease">📬 — unread important</div>
+    <div id="calNowPlaying" style="color:var(--lime);display:none">♫ —</div>
+    <div id="calEvents" style="margin-top:4px">Calendar idle</div>
+  </div>
+
+  <div class="title" style="margin-top:8px">NEURAL MODEL</div>
+  <select class="qbtn" id="modelSel">
+    <option value="llama-3.3-70b-versatile">llama-3.3-70b (smart)</option>
+    <option value="llama-3.1-8b-instant">llama-3.1-8b (fast)</option>
+    <option value="meta-llama/llama-4-scout-17b-16e-instruct">llama-4-scout</option>
+    <option value="meta-llama/llama-4-maverick-17b-128e-instruct">llama-4-maverick</option>
+    <option value="gemma2-9b-it">gemma2-9b</option>
+  </select>
+
+  <div class="title" style="margin-top:12px">TACTICAL OPS</div>
+  <button class="qbtn" id="pauseListenerBtn">◢ MIC: LISTENING</button>
+  <button class="qbtn" data-cmd="look at my screen and solve it">◢ SCAN SCREEN</button>
+  <button class="qbtn" data-cmd="what's on my calendar">◢ CALENDAR</button>
+  <button class="qbtn" data-cmd="list my passwords">◢ VAULT LIST</button>
+  <button class="qbtn" data-cmd="generate a strong password">◢ NEW PASSWORD</button>
+  <button class="qbtn" data-cmd="what is my ip">◢ MY IP</button>
+  <button class="qbtn" data-cmd="ip info">◢ GEO LOOKUP</button>
+  <button class="qbtn" data-cmd="list my wifi">◢ WIFI LIST</button>
+  <button class="qbtn" data-cmd="what's playing">◢ NOW PLAYING</button>
+  <button class="qbtn" data-cmd="pause">◢ PAUSE MUSIC</button>
+  <button class="qbtn" data-cmd="next song">◢ NEXT TRACK</button>
+  <button class="qbtn" data-cmd="study mode">◢ STUDY MODE</button>
+  <button class="qbtn" data-cmd="gaming mode">◢ GAMING MODE</button>
+  <button class="qbtn" data-cmd="ctf mode">◢ CTF MODE</button>
+  <button class="qbtn" data-cmd="recent critical cves">◢ CRITICAL CVES</button>
+
+  <div class="title" style="margin-top:12px">QUICK COMMANDS</div>
+  <button class="qbtn" data-cmd="what time is it">▸ TIME</button>
+  <button class="qbtn" data-cmd="weather">▸ WEATHER</button>
+  <button class="qbtn" data-cmd="show my tasks">▸ MY TASKS</button>
+  <button class="qbtn" data-cmd="any important mail">▸ CHECK MAIL</button>
+  <button class="qbtn" data-cmd="system info">▸ SYSTEM INFO</button>
+  <button class="qbtn" data-cmd="take a screenshot">▸ SCREENSHOT</button>
+  <button class="qbtn" data-cmd="what do you remember">▸ MEMORY DUMP</button>
+
+  <div class="title" style="margin-top:12px">TELEMETRY</div>
+  <div class="stream" id="stream"></div>
+</div>
+
+<!-- READOUT TRANSCRIPT -->
+<div class="readout" id="readout"></div>
+
+<!-- BOTTOM AUDIO WAVE -->
+<canvas id="wave"></canvas>
+
+<!-- ORB CANVAS -->
+<canvas id="orb"></canvas>
+
+<!-- File upload (hidden), drag-drop overlay, attachment strip -->
+<input type="file" id="fileInput" multiple style="display:none"
+       accept="image/*,.txt,.py,.js,.ts,.tsx,.jsx,.html,.css,.md,.json,.xml,.yaml,.yml,.csv,.log,.c,.cpp,.h,.go,.rs,.sh,.ps1,.bat,.sql,.toml,.ini">
+<div id="dropZone">
+  <div class="dropContent">
+    <div class="dropIcon">⬇</div>
+    <div class="dropText">DROP TO ATTACH</div>
+    <div class="dropHint">image / code / text — JARVIS will analyze</div>
+  </div>
+</div>
+<div id="attachStrip"></div>
+
+<!-- COMPOSER -->
+<div class="composer">
+  <input id="input" placeholder="◤ ENTER COMMAND, SIR ◢" autocomplete="off" />
+  <button class="iconBtn" id="attachBtn" title="Attach file / image">📎</button>
+  <button class="iconBtn" id="stopBtn" title="Stop speaking">■</button>
+  <button class="iconBtn" id="micBtn" title="Toggle microphone">◉</button>
+  <button class="iconBtn" id="sendBtn" title="Send">▶</button>
+</div>
+
+<div class="foot-tag">J · A · R · V · I · S</div>
+<div class="reticle" id="reticle"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   BOOT SEQUENCE
+   ════════════════════════════════════════════════════════════════ */
+const BOOT_LINES = [
+  "[BOOT] Power-on self-test initiated",
+  "[BOOT] Loading neural matrix .................. <span class='ok'>OK</span>",
+  "[BOOT] Calibrating arc reactor ................ <span class='ok'>OK</span>",
+  "[BOOT] Initializing edge-tts neural voice ..... <span class='ok'>OK</span>",
+  "[BOOT] Connecting Groq inference cluster ...... <span class='ok'>OK</span>",
+  "[BOOT] Voice recognition layer online ......... <span class='ok'>OK</span>",
+  "[BOOT] Memory bank loaded ..................... <span class='ok'>OK</span>",
+  "[BOOT] System diagnostics ..................... <span class='ok'>OK</span>",
+  "[BOOT] All subsystems nominal",
+  "[BOOT] Awaiting orders, Sir.",
+];
+const bootEl = document.getElementById("bootLines");
+let bootIdx = 0;
+function tickBoot(){
+  if (bootIdx >= BOOT_LINES.length){
+    setTimeout(()=>document.getElementById("boot").classList.add("hide"), 350);
+    setTimeout(()=>document.getElementById("boot").remove(), 1300);
+    return;
+  }
+  const d = document.createElement("div");
+  d.className = "line";
+  d.innerHTML = BOOT_LINES[bootIdx++];
+  bootEl.appendChild(d);
+  setTimeout(tickBoot, 90 + Math.random()*110);
+}
+tickBoot();
+
+/* ════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const STATE = {
+  mode: "idle", history: [],
+  micActive: false,
+  freqData: new Uint8Array(72),
+  timeData: new Uint8Array(1024),
+  pulse: 0,
+  cpu:0, ram:0, dsk:0, batt:null, mem:0,
+  startedAt: Date.now(),
+  mouseX: window.innerWidth/2, mouseY: window.innerHeight/2,
+  pwrTarget: 87, netTarget: 60,
+};
+
+const pill = $("statusPill"), pillText = $("statusText");
+
+function flashWake(){
+  const f = document.createElement("div");
+  f.className = "wake-flash";
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), 900);
+}
+
+function setMode(m){
+  if (STATE.mode === m) return;
+  STATE.mode = m; STATE.pulse = 1.0;
+  document.body.classList.remove("mode-idle","mode-listening","mode-thinking","mode-speaking");
+  document.body.classList.add("mode-" + m);
+  pillText.textContent =
+    m === "idle"      ? "STANDBY"   :
+    m === "listening" ? "LISTENING" :
+    m === "thinking"  ? "PROCESSING":
+    /*speaking*/        "SPEAKING";
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STATUS POLL
+   ════════════════════════════════════════════════════════════════ */
+function fmtUptime(s){
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  if (h) return `${h}h${m}m`;
+  if (m) return `${m}m${sec}s`;
+  return `${sec}s`;
+}
+
+let lastSeenSeq = 0;
+async function refreshStatus(){
+  try{
+    const r = await fetch("/api/status"); const d = await r.json();
+    STATE.cpu = d.cpu ?? 0; STATE.ram = d.ram ?? 0; STATE.dsk = d.disk ?? 0;
+    STATE.batt = d.batteryPct; STATE.mem = d.memCount || 0;
+    $("sGroq").textContent   = d.groqConfigured ? "ONLINE" : "NO KEY";
+    $("sGroq").className     = "v " + (d.groqConfigured ? "ok" : "bad");
+    $("sOllama").textContent = d.ollamaOnline ? "ONLINE" : "OFFLINE";
+    $("sOllama").className   = "v " + (d.ollamaOnline ? "ok" : "warn");
+    $("sMem").textContent    = d.memCount;
+    $("sUp").textContent     = fmtUptime(d.uptimeSec);
+    $("topClock").textContent= d.timeFull || "";
+    $("topOwner").textContent= d.owner || "Sir";
+    $("topLoc").textContent  = d.city || "";
+
+    if (d.conversationSeq && d.conversationSeq > lastSeenSeq && d.recentExchange){
+      addLine(d.recentExchange.user, "user");
+      addLine(d.recentExchange.reply, "jarvis");
+      pushStream("voice command captured","hot");
+      lastSeenSeq = d.conversationSeq;
+    } else if (d.conversationSeq && lastSeenSeq === 0) {
+      lastSeenSeq = d.conversationSeq;
+    }
+
+    if (d.wakeRequested){
+      pushStream("WAKE WORD HEARD","hot");
+      flashWake();
+      setMode("listening");
+      if (recognizer && !STATE.micActive){
+        try { recognizer.start(); STATE.micActive = true; $("micBtn").classList.add("active"); }
+        catch(e){}
+      }
+    }
+
+    if (d.speaking) setMode("speaking");
+    else if (STATE.mode === "speaking") setMode(STATE.micActive ? "listening" : "idle");
+    $("topNet").textContent  = "ONLINE"; $("topNet").className = "v ok";
+
+    const pbtn = $("pauseListenerBtn");
+    if (d.listenerPaused){
+      pbtn.textContent = "◢ MIC: PAUSED (click to resume)";
+      pbtn.dataset.paused = "1";
+      pbtn.style.color = "var(--orange)";
+    } else {
+      pbtn.textContent = "◢ MIC: LISTENING";
+      pbtn.dataset.paused = "0";
+      pbtn.style.color = "";
+    }
+
+    const mailLine = $("calMailLine");
+    const nUnread = d.unreadImportant || 0;
+    mailLine.textContent = `📬 ${nUnread} unread important`;
+
+    const evDiv = $("calEvents");
+    const events = d.todayEvents || [];
+    if (!events.length){
+      evDiv.innerHTML = "<span style='color:var(--text-dim)'>Calendar clear today</span>";
+    } else {
+      evDiv.innerHTML = events.slice(0,3).map(e =>
+        `<div style="padding:2px 0">
+           <span style="color:var(--accent); transition:color .55s ease">${e.when}</span>
+           <span style="color:var(--text)">  ${e.summary}</span>
+         </div>`
+      ).join("");
+    }
+
+    const np = $("calNowPlaying");
+    if (d.nowPlaying){
+      np.textContent = "♫ " + d.nowPlaying;
+      np.style.display = "block";
+    } else {
+      np.style.display = "none";
+    }
+  } catch(e) {
+    $("topNet").textContent="OFFLINE"; $("topNet").className="v bad";
+  }
+}
+setInterval(refreshStatus, 1500); refreshStatus();
+
+function updateBars(){
+  const cpu = STATE.cpu, ram = STATE.ram, dsk = STATE.dsk;
+  $("cpuFill").style.width = cpu.toFixed(1)+"%"; $("cpuNum").textContent  = cpu.toFixed(0)+"%";
+  $("ramFill").style.width = ram.toFixed(1)+"%"; $("ramNum").textContent  = ram.toFixed(0)+"%";
+  $("dskFill").style.width = dsk.toFixed(1)+"%"; $("dskNum").textContent  = dsk.toFixed(0)+"%";
+  STATE.netTarget += (Math.random()-0.5)*8;
+  STATE.netTarget = Math.max(35, Math.min(95, STATE.netTarget));
+  $("netFill").style.width = STATE.netTarget.toFixed(0)+"%";
+  $("netNum").textContent  = Math.round(STATE.netTarget)+"ms";
+  if (STATE.batt == null){
+    $("pwrFill").style.width = STATE.pwrTarget.toFixed(0)+"%";
+    $("pwrNum").textContent  = Math.round(STATE.pwrTarget)+"%";
+  } else {
+    $("pwrFill").style.width = STATE.batt + "%";
+    $("pwrNum").textContent  = STATE.batt + "%";
+  }
+}
+setInterval(updateBars, 800);
+
+/* ════════════════════════════════════════════════════════════════
+   TELEMETRY STREAM
+   ════════════════════════════════════════════════════════════════ */
+const TELE_LINES = [
+  "ent.scan complete (0 threats)", "neural net stable",
+  "vocoder rate nominal", "core temp 41.2C",
+  "memory write OK", "auth handshake verified",
+  "groq endpoint p99 = 412ms", "wake-word listener active",
+  "biosignal lock confirmed", "tts buffer flushed",
+  "kernel idle 22%", "syslog: 0 errors",
+  "ports 8888 LISTEN", "rng entropy ok",
+  "audio sample rate 48kHz", "FFT bins 128 OK",
+  "encryption AES-256", "uplink secure",
+  "shield strength 100%",
+];
+const streamEl = $("stream");
+function pushStream(text, cls){
+  const d = document.createElement("div");
+  if (cls) d.className = cls;
+  const ts = new Date().toTimeString().slice(0,8);
+  d.textContent = `${ts}  ▸ ${text}`;
+  streamEl.insertBefore(d, streamEl.firstChild);
+  while (streamEl.childNodes.length > 8) streamEl.removeChild(streamEl.lastChild);
+}
+setInterval(()=>pushStream(TELE_LINES[Math.floor(Math.random()*TELE_LINES.length)],
+                            Math.random() < .18 ? "hot":""), 1200);
+for (let i=0;i<5;i++) pushStream(TELE_LINES[i]);
+
+/* ════════════════════════════════════════════════════════════════
+   READOUT + CODE BLOCK RENDERING
+   ════════════════════════════════════════════════════════════════ */
+function parseCodeBlocks(text){
+  const segments = [];
+  const re = /```([a-zA-Z0-9_+\-]*)\n?([\s\S]*?)```/g;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null){
+    if (m.index > last) segments.push({type:"text", text:text.slice(last, m.index)});
+    segments.push({type:"code", lang:m[1] || "code", text:m[2]});
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) segments.push({type:"text", text:text.slice(last)});
+  return segments;
+}
+
+function makeCodeBlock(lang, code){
+  const wrap = document.createElement("div");
+  wrap.className = "codeBlock";
+  const head = document.createElement("div");
+  head.className = "codeHead";
+  const lbl = document.createElement("span"); lbl.textContent = lang;
+  const btn = document.createElement("button");
+  btn.className = "codeCopy"; btn.textContent = "COPY";
+  btn.addEventListener("click", async ()=>{
+    try{ await navigator.clipboard.writeText(code); }
+    catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = code; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch(_) {}
+      document.body.removeChild(ta);
+    }
+    btn.textContent = "COPIED ✓"; btn.classList.add("copied");
+    setTimeout(()=>{ btn.textContent = "COPY"; btn.classList.remove("copied"); }, 1800);
+  });
+  head.appendChild(lbl); head.appendChild(btn);
+  const pre = document.createElement("pre");
+  pre.textContent = code;
+  wrap.appendChild(head); wrap.appendChild(pre);
+  return wrap;
+}
+
+function typewriter(el, text, speed=14){
+  el.classList.add("typing");
+  let i = 0;
+  function step(){
+    if (i >= text.length){ el.classList.remove("typing"); return; }
+    el.textContent += text[i++];
+    setTimeout(step, speed);
+  }
+  step();
+}
+
+function addLine(text, who){
+  const ro = $("readout");
+  if (who === "jarvis" && /```[\s\S]*?```/.test(text)){
+    const segs = parseCodeBlocks(text);
+    for (const s of segs){
+      if (s.type === "code"){
+        ro.appendChild(makeCodeBlock(s.lang, s.text.replace(/\s+$/,"")));
+      } else {
+        const t = s.text.trim();
+        if (!t) continue;
+        const div = document.createElement("div");
+        div.className = "line jarvis";
+        ro.appendChild(div);
+        typewriter(div, t);
+      }
+    }
+  } else if (who === "jarvis"){
+    const div = document.createElement("div");
+    div.className = "line jarvis";
+    ro.appendChild(div);
+    typewriter(div, text);
+  } else {
+    const div = document.createElement("div");
+    div.className = "line " + who;
+    div.textContent = (who==="user"?"› ":"") + text;
+    ro.appendChild(div);
+  }
+  while (ro.childNodes.length > 40) ro.removeChild(ro.firstChild);
+  ro.scrollTop = ro.scrollHeight;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   FILE ATTACHMENTS
+   ════════════════════════════════════════════════════════════════ */
+const attachedFiles = [];
+const MAX_TEXT_CHARS = 80000;
+
+function renderAttachStrip(){
+  const strip = $("attachStrip");
+  strip.innerHTML = "";
+  for (let i = 0; i < attachedFiles.length; i++){
+    const f = attachedFiles[i];
+    const chip = document.createElement("div");
+    chip.className = "attach-chip";
+    if (f.type === "image"){
+      const im = document.createElement("img");
+      im.src = `data:${f.mimeType};base64,${f.data}`;
+      chip.appendChild(im);
+    }
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = f.name + (f.type==="text" ? ` · ${f.data.length} chars` : "");
+    chip.appendChild(name);
+    const x = document.createElement("button");
+    x.textContent = "×"; x.title = "Remove";
+    x.addEventListener("click", ()=>{ attachedFiles.splice(i, 1); renderAttachStrip(); });
+    chip.appendChild(x);
+    strip.appendChild(chip);
+  }
+}
+
+async function attachFile(file){
+  if (!file) return;
+  if (file.type.startsWith("image/")){
+    const b64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(",")[1]); r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+    attachedFiles.push({type:"image", name:file.name||"image.png",
+                        data:b64, mimeType:file.type||"image/png"});
+  } else {
+    const text = await file.text();
+    attachedFiles.push({type:"text", name:file.name||"file.txt",
+                        data:text.slice(0, MAX_TEXT_CHARS)});
+  }
+  renderAttachStrip();
+  pushStream(`attached ${file.name}`, "hot");
+}
+
+$("attachBtn").addEventListener("click", () => $("fileInput").click());
+$("fileInput").addEventListener("change", async (ev) => {
+  for (const f of ev.target.files){ await attachFile(f); }
+  ev.target.value = "";
+});
+
+let dragCounter = 0;
+window.addEventListener("dragenter", (e) => {
+  if (e.dataTransfer && e.dataTransfer.types.includes("Files")){
+    dragCounter++; $("dropZone").classList.add("active");
+  }
+});
+window.addEventListener("dragleave", () => {
+  if (--dragCounter <= 0){ dragCounter = 0; $("dropZone").classList.remove("active"); }
+});
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", async (e) => {
+  e.preventDefault(); dragCounter = 0; $("dropZone").classList.remove("active");
+  if (!e.dataTransfer) return;
+  for (const f of e.dataTransfer.files){ await attachFile(f); }
+});
+document.addEventListener("paste", async (e) => {
+  if (!e.clipboardData) return;
+  for (const item of e.clipboardData.items){
+    if (item.kind === "file" && item.type.startsWith("image/")){
+      const f = item.getAsFile(); if (f) await attachFile(f);
+    }
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════
+   SEND COMMAND
+   ════════════════════════════════════════════════════════════════ */
+async function postChat(){
+  return fetch("/api/chat", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({messages: STATE.history}),
+  });
+}
+
+async function send(text){
+  text = (text||"").trim();
+  const hasAttachments = attachedFiles.length > 0;
+  if (!text && !hasAttachments) return;
+
+  let displayText = text;
+  if (hasAttachments){
+    const names = attachedFiles.map(f => f.name).join(", ");
+    displayText = (text ? text + " " : "") + `[attached: ${names}]`;
+  }
+  if (displayText) addLine(displayText, "user");
+  $("input").value = "";
+  setMode("thinking");
+
+  const firstImage = attachedFiles.find(f => f.type === "image");
+  if (firstImage){
+    const question = text || "What is on this image, Sir? Solve or explain.";
+    pushStream("dispatching image to vision", "hot");
+    try{
+      const r = await fetch("/api/vision/image", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({image:firstImage.data, question:question}),
+      });
+      const d = await r.json();
+      addLine(d.reply || "...", "jarvis");
+      pushStream("vision reply received");
+      setMode("speaking");
+      const dur = Math.min(14000, Math.max(2200, (d.reply||"").length * 55));
+      setTimeout(()=>setMode(STATE.micActive?"listening":"idle"), dur);
+    }catch(e){
+      addLine("Vision request failed: " + e.message, "error");
+      setMode("idle");
+    }
+    attachedFiles.length = 0; renderAttachStrip();
+    return;
+  }
+
+  let combined = text;
+  for (const f of attachedFiles){
+    if (f.type === "text"){
+      combined += `\n\n--- FILE: ${f.name} ---\n${f.data}\n--- END ${f.name} ---`;
+    }
+  }
+  attachedFiles.length = 0; renderAttachStrip();
+
+  STATE.history.push({role:"user", content: combined || text});
+  if (STATE.history.length > 40) STATE.history.splice(0, STATE.history.length - 40);
+  pushStream("query dispatched -> "+(text || "[file]").slice(0,40), "hot");
+
+  let r;
+  try { r = await postChat(); }
+  catch(e1){
+    pushStream("link drop, retrying","warn");
+    await new Promise(r=>setTimeout(r, 900));
+    try { r = await postChat(); }
+    catch(e2){
+      addLine("Server unreachable, Sir.","error"); setMode("idle"); return;
+    }
+  }
+  try{
+    const d = await r.json();
+    const reply = d.reply || "...";
+    STATE.history.push({role:"assistant", content:reply});
+    addLine(reply, "jarvis");
+    pushStream("response received ("+(d.source||"ai")+")");
+    setMode("speaking");
+    const dur = Math.min(14000, Math.max(2200, reply.length * 55));
+    setTimeout(()=>setMode(STATE.micActive?"listening":"idle"), dur);
+  }catch(e){
+    addLine("Reply parse failed: "+e.message,"error"); setMode("idle");
+  }
+}
+
+$("pauseListenerBtn").addEventListener("click", async ()=>{
+  const paused = $("pauseListenerBtn").dataset.paused === "1";
+  const target = paused ? "/api/listener/resume" : "/api/listener/pause";
+  try{ await fetch(target,{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}); }catch(e){}
+  pushStream(paused ? "listener resumed" : "listener paused", paused ? "hot" : "warn");
+});
+$("stopBtn").addEventListener("click", async ()=>{
+  try{ await fetch("/api/stop",{method:"POST"}); }catch(e){}
+  setMode(STATE.micActive?"listening":"idle");
+  pushStream("speech halted","warn");
+});
+$("sendBtn").addEventListener("click", () => send($("input").value));
+$("input").addEventListener("keydown", e => { if (e.key === "Enter") send($("input").value); });
+document.querySelectorAll(".qbtn").forEach(b => {
+  if (b.dataset.cmd) b.addEventListener("click", () => send(b.dataset.cmd));
+});
+$("modelSel").addEventListener("change", async () => {
+  await fetch("/api/model", {
+    method: "POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({model: $("modelSel").value}),
+  });
+  pushStream("model switched -> " + $("modelSel").value, "hot");
+});
+
+/* ════════════════════════════════════════════════════════════════
+   MIC
+   ════════════════════════════════════════════════════════════════ */
+let recognizer = null;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR){
+  recognizer = new SR();
+  recognizer.continuous = true; recognizer.interimResults = false;
+  recognizer.lang = "en-US";
+  recognizer.onresult = ev => {
+    const txt = ev.results[ev.results.length-1][0].transcript.trim();
+    if (txt) send(txt);
+  };
+  recognizer.onerror = ()=>{};
+  recognizer.onend = ()=>{ if (STATE.micActive){ try{recognizer.start()}catch(e){} } };
+}
+let audioCtx=null, analyser=null, micSrc=null, micStream=null;
+async function enableMic(){
+  if (audioCtx) return;
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    micSrc = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
+    micSrc.connect(analyser);
+    $("sMic").textContent = "ACTIVE"; $("sMic").className="v ok";
+  }catch(e){}
+}
+function disableMic(){
+  try{micStream&&micStream.getTracks().forEach(t=>t.stop())}catch(e){}
+  try{audioCtx&&audioCtx.close()}catch(e){}
+  audioCtx=analyser=micSrc=micStream=null;
+  $("sMic").textContent = "stand-by"; $("sMic").className="v";
+}
+async function toggleMic(){
+  STATE.micActive = !STATE.micActive;
+  $("micBtn").classList.toggle("active", STATE.micActive);
+  if (STATE.micActive){
+    await enableMic();
+    if (recognizer){ try{recognizer.start()}catch(e){} }
+    setMode("listening"); pushStream("mic engaged","hot");
+  } else {
+    if (recognizer){ try{recognizer.stop()}catch(e){} }
+    disableMic(); setMode("idle"); pushStream("mic disengaged");
+  }
+}
+$("micBtn").addEventListener("click", toggleMic);
+
+const reticle = $("reticle");
+window.addEventListener("mousemove", e=>{
+  STATE.mouseX = e.clientX; STATE.mouseY = e.clientY;
+  reticle.style.display = "block";
+  reticle.style.left = e.clientX+"px";
+  reticle.style.top  = e.clientY+"px";
+});
+
+/* ════════════════════════════════════════════════════════════════
+   CANVAS — Arc reactor (monochrome + accent)
+   ════════════════════════════════════════════════════════════════ */
+const orb = $("orb"), ox = orb.getContext("2d");
+let W=0, H=0, DPR = Math.max(1, window.devicePixelRatio||1);
+function resizeOrb(){
+  W = window.innerWidth; H = window.innerHeight;
+  orb.width = W*DPR; orb.height = H*DPR;
+  orb.style.width = W+"px"; orb.style.height = H+"px";
+  ox.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize", resizeOrb); resizeOrb();
+
+const ORBIT = Array.from({length:32},()=>({
+  a:Math.random()*Math.PI*2, r:0.85+Math.random()*0.95,
+  s:0.35+Math.random()*0.85, size:1+Math.random()*2.4,
+}));
+const STARS = Array.from({length:40},()=>({
+  x:Math.random()*W, y:Math.random()*H,
+  s:0.3+Math.random()*0.8, twinkle:Math.random()*Math.PI*2,
+}));
+
+function accentRgba(alpha){
+  const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+  // hex like #ff0080 or #ffffff
+  const r = parseInt(accent.slice(1,3),16);
+  const g = parseInt(accent.slice(3,5),16);
+  const b = parseInt(accent.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function modeColors(){
+  const a = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+  const speeds = {idle:0.6, listening:2.0, thinking:4.0, speaking:2.5};
+  return { core:"#ffffff", ring:a, accent:a, speed: speeds[STATE.mode]||1 };
+}
+
+function sampleFreq(){
+  if (!analyser){
+    for (let i=0;i<72;i++)
+      STATE.freqData[i] = 16+Math.sin((t*0.005)+i*0.3)*14+Math.random()*8;
+    return;
+  }
+  const tmp = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(tmp);
+  for (let i=0;i<72;i++) STATE.freqData[i] = tmp[Math.floor(i/72*tmp.length)];
+}
+function sampleTime(){
+  if (!analyser){
+    for (let i=0;i<STATE.timeData.length;i++)
+      STATE.timeData[i] = 128 + Math.sin((t*0.06)+i*0.12)*22 + Math.sin(i*0.03)*10;
+    return;
+  }
+  const tmp = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(tmp);
+  STATE.timeData = tmp;
+}
+
+let t = 0;
+function drawOrb(){
+  t++;
+  const C = modeColors();
+  const cx = W/2, cy = H/2;
+  const R = Math.min(W,H) * 0.165;
+  const sp = C.speed;
+
+  ox.clearRect(0,0,W,H);
+
+  // twinkle stars
+  for (const p of STARS){
+    p.twinkle += 0.04;
+    ox.fillStyle = `rgba(255,255,255,${0.10 + Math.sin(p.twinkle)*0.10})`;
+    ox.fillRect(p.x, p.y, p.s, p.s);
+  }
+
+  // outer halo (single, accent-tinted)
+  const gh = ox.createRadialGradient(cx,cy,R*0.4, cx,cy, R*2.7);
+  gh.addColorStop(0, accentRgba(0.25)); gh.addColorStop(1,"rgba(0,0,0,0)");
+  ox.fillStyle = gh;
+  ox.beginPath(); ox.arc(cx,cy, R*2.7, 0, Math.PI*2); ox.fill();
+
+  sampleFreq();
+
+  // frequency bars in accent color
+  const barInner = R*1.08, barMax = R*0.55;
+  for (let i=0;i<72;i++){
+    const a = (i/72)*Math.PI*2 + t*0.003*sp;
+    const v = STATE.freqData[i]/255;
+    const len = barMax * (0.18 + v*1.05);
+    const x1 = cx + Math.cos(a)*barInner, y1 = cy + Math.sin(a)*barInner;
+    const x2 = cx + Math.cos(a)*(barInner+len), y2 = cy + Math.sin(a)*(barInner+len);
+    ox.strokeStyle = C.ring;
+    ox.globalAlpha = 0.35 + v*0.65;
+    ox.lineWidth = 2;
+    ox.beginPath(); ox.moveTo(x1,y1); ox.lineTo(x2,y2); ox.stroke();
+  }
+  ox.globalAlpha = 1;
+
+  drawArcRing(cx,cy, R*1.50, 36, t*0.004*sp, "#ffffff", 1.6, 0.35);
+  drawTextRing(cx,cy, R*1.62, "JARVIS · GROQ · LLAMA · NEURAL · ONLINE · ARC ·", t*0.0014*sp, "#ffffff", 10);
+  drawArcRing(cx,cy, R*1.28, 24, -t*0.006*sp, C.ring, 1.6, 0.55);
+  drawArcRing(cx,cy, R*1.12, 16, t*0.012*sp, C.ring, 1.2, 0.5);
+
+  // hex cells
+  for (let i=0;i<12;i++){
+    const ang = (i/12)*Math.PI*2 + t*0.002*sp;
+    const cxh = cx + Math.cos(ang) * R*0.78;
+    const cyh = cy + Math.sin(ang) * R*0.78;
+    const phase = (Math.sin(t*0.08 + i*0.7) + 1)/2;
+    drawHex(cxh, cyh, R*0.10, C.ring, 0.25 + phase*0.75);
+  }
+
+  // particles
+  for (const p of ORBIT){
+    p.a += 0.005*sp*p.s;
+    const rr = R*(1.18+p.r*0.5) + Math.sin(t*0.01+p.a*3)*4;
+    const px = cx + Math.cos(p.a)*rr, py = cy + Math.sin(p.a)*rr;
+    ox.fillStyle = "#ffffff";
+    ox.globalAlpha = 0.8;
+    ox.beginPath(); ox.arc(px,py,p.size,0,Math.PI*2); ox.fill();
+  }
+  ox.globalAlpha = 1;
+
+  // hex bolts
+  for (let i=0;i<6;i++){
+    const a = (i/6)*Math.PI*2 + t*0.004*sp;
+    const bx = cx + Math.cos(a)*R*1.50, by = cy + Math.sin(a)*R*1.50;
+    drawHex(bx,by, 4.5, "#ffffff", 1);
+  }
+
+  // pulse ring
+  if (STATE.pulse > 0.01){
+    const pr = R*(1.25 + (1-STATE.pulse)*1.7);
+    ox.strokeStyle = C.ring;
+    ox.globalAlpha = STATE.pulse*0.85;
+    ox.lineWidth = 2.5;
+    ox.beginPath(); ox.arc(cx,cy,pr,0,Math.PI*2); ox.stroke();
+    ox.globalAlpha = 1;
+    STATE.pulse *= 0.94;
+  }
+
+  // petal vents
+  ox.save(); ox.translate(cx,cy); ox.rotate(t*0.0015*sp);
+  for (let i=0;i<6;i++){
+    const a = (i/6)*Math.PI*2;
+    const x0 = Math.cos(a)*R*0.55, y0 = Math.sin(a)*R*0.55;
+    const x1 = Math.cos(a-0.20)*R*0.95, y1 = Math.sin(a-0.20)*R*0.95;
+    const x2 = Math.cos(a+0.20)*R*0.95, y2 = Math.sin(a+0.20)*R*0.95;
+    const g = ox.createRadialGradient(x0,y0,2, x0,y0,R*0.5);
+    g.addColorStop(0,"rgba(255,255,255,0.95)");
+    g.addColorStop(0.5, C.ring); g.addColorStop(1,"rgba(0,0,0,0)");
+    ox.fillStyle = g;
+    ox.beginPath(); ox.moveTo(x0,y0); ox.lineTo(x1,y1); ox.lineTo(x2,y2); ox.closePath(); ox.fill();
+  }
+  ox.restore();
+
+  // core sphere — black with accent rim
+  const cg = ox.createRadialGradient(cx-R*0.25, cy-R*0.25, R*0.06, cx, cy, R);
+  cg.addColorStop(0, "rgba(255,255,255,0.98)");
+  cg.addColorStop(0.35, C.ring);
+  cg.addColorStop(1, "#000000");
+  ox.fillStyle = cg;
+  ox.beginPath(); ox.arc(cx,cy,R,0,Math.PI*2); ox.fill();
+
+  ox.strokeStyle = "rgba(255,255,255,0.12)"; ox.lineWidth = 1;
+  ox.beginPath(); ox.arc(cx,cy,R*0.84,0,Math.PI*2); ox.stroke();
+  ox.beginPath(); ox.arc(cx,cy,R*0.68,0,Math.PI*2); ox.stroke();
+  ox.beginPath(); ox.arc(cx,cy,R*0.50,0,Math.PI*2); ox.stroke();
+
+  ox.fillStyle = "rgba(255,255,255,0.95)";
+  ox.beginPath(); ox.arc(cx,cy,3.5,0,Math.PI*2); ox.fill();
+
+  if (STATE.mouseX){
+    ox.strokeStyle = accentRgba(0.18); ox.lineWidth = 1;
+    ox.setLineDash([4,6]);
+    ox.beginPath(); ox.moveTo(STATE.mouseX,0); ox.lineTo(STATE.mouseX,H); ox.stroke();
+    ox.beginPath(); ox.moveTo(0,STATE.mouseY); ox.lineTo(W,STATE.mouseY); ox.stroke();
+    ox.setLineDash([]);
+  }
+}
+
+function drawArcRing(cx,cy,r,segments,phase,color,lineW,dim=0.5){
+  const seg = (Math.PI*2)/segments;
+  const gap = seg*0.18;
+  for (let i=0;i<segments;i++){
+    const a0 = i*seg+phase, a1 = a0+seg-gap;
+    ox.strokeStyle = color;
+    ox.globalAlpha = (i%2===0) ? 0.95 : dim;
+    ox.lineWidth = lineW;
+    ox.beginPath(); ox.arc(cx,cy,r,a0,a1); ox.stroke();
+  }
+  ox.globalAlpha = 1;
+}
+function drawTextRing(cx,cy,r,text,phase,color,size){
+  ox.save(); ox.translate(cx,cy); ox.rotate(phase);
+  ox.fillStyle = color; ox.globalAlpha = 0.4;
+  ox.font = `${size}px "JetBrains Mono",monospace`;
+  ox.textAlign = "center"; ox.textBaseline = "middle";
+  const chars = text.split("");
+  const angStep = (Math.PI*2)/chars.length;
+  for (let i=0;i<chars.length;i++){
+    ox.save(); ox.rotate(i*angStep); ox.translate(0,-r);
+    ox.fillText(chars[i],0,0); ox.restore();
+  }
+  ox.restore(); ox.globalAlpha = 1;
+}
+function drawHex(cx,cy,r,color,alpha=1){
+  ox.fillStyle = color; ox.globalAlpha = alpha;
+  ox.beginPath();
+  for (let i=0;i<6;i++){
+    const a = (i/6)*Math.PI*2 + Math.PI/6;
+    const x = cx + Math.cos(a)*r, y = cy + Math.sin(a)*r;
+    if (i===0) ox.moveTo(x,y); else ox.lineTo(x,y);
+  }
+  ox.closePath(); ox.fill();
+  ox.globalAlpha = 1;
+}
+
+orb.addEventListener("click", toggleMic);
+
+/* ════════════════════════════════════════════════════════════════
+   WAVEFORM
+   ════════════════════════════════════════════════════════════════ */
+const wave = $("wave"), wx = wave.getContext("2d");
+function resizeWave(){
+  wave.width = window.innerWidth*DPR; wave.height = 34*DPR;
+  wave.style.width = window.innerWidth+"px"; wave.style.height = "34px";
+  wx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener("resize", resizeWave); resizeWave();
+function drawWave(){
+  sampleTime();
+  const ww = window.innerWidth, wh = 34;
+  wx.clearRect(0,0,ww,wh);
+  const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+  wx.strokeStyle = accent; wx.lineWidth = 1.5;
+  wx.globalAlpha = 0.85;
+  wx.shadowColor = accent; wx.shadowBlur = 8;
+  wx.beginPath();
+  const N = STATE.timeData.length;
+  for (let i=0;i<ww;i++){
+    const v = STATE.timeData[Math.floor(i/ww*N)] / 255;
+    const y = wh/2 + (v-0.5)*wh*0.95;
+    if (i===0) wx.moveTo(i,y); else wx.lineTo(i,y);
+  }
+  wx.stroke(); wx.shadowBlur = 0;
+  wx.strokeStyle = "rgba(255,255,255,0.15)"; wx.lineWidth = 1;
+  for (let i=0;i<ww;i+=40){
+    wx.beginPath(); wx.moveTo(i,0); wx.lineTo(i,3); wx.stroke();
+    wx.beginPath(); wx.moveTo(i,wh-3); wx.lineTo(i,wh); wx.stroke();
+  }
+  wx.globalAlpha = 1;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DIAL + GAUGE
+   ════════════════════════════════════════════════════════════════ */
+const dial = $("dial"), dx = dial.getContext("2d");
+const gauge = $("gauge"), gx = gauge.getContext("2d");
+function resizeMini(){
+  for (const c of [dial,gauge]){
+    const r = c.getBoundingClientRect();
+    c.width = r.width*DPR; c.height = r.height*DPR;
+    c.getContext("2d").setTransform(DPR,0,0,DPR,0,0);
+  }
+}
+window.addEventListener("resize", resizeMini); setTimeout(resizeMini, 30);
+
+function drawDial(){
+  const r = dial.getBoundingClientRect();
+  const W2 = r.width, H2 = r.height;
+  if (!W2) return;
+  dx.clearRect(0,0,W2,H2);
+  const cx = W2/2, cy = H2/2 + 8, R = Math.min(W2,H2)*0.38;
+  const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+  dx.strokeStyle = "rgba(255,255,255,0.4)"; dx.lineWidth = 1; dx.globalAlpha = 0.8;
+  dx.beginPath(); dx.arc(cx,cy,R,0,Math.PI*2); dx.stroke();
+  for (let i=0;i<36;i++){
+    const a = (i/36)*Math.PI*2;
+    const r0 = R, r1 = R - (i%9===0 ? 8 : 4);
+    dx.beginPath();
+    dx.moveTo(cx+Math.cos(a)*r0, cy+Math.sin(a)*r0);
+    dx.lineTo(cx+Math.cos(a)*r1, cy+Math.sin(a)*r1);
+    dx.stroke();
+  }
+  dx.font = "10px JetBrains Mono,monospace"; dx.fillStyle = "#fff";
+  dx.textAlign = "center"; dx.textBaseline = "middle";
+  for (const [lbl,a] of [["N",-Math.PI/2],["E",0],["S",Math.PI/2],["W",Math.PI]]){
+    dx.fillText(lbl, cx+Math.cos(a)*(R-14), cy+Math.sin(a)*(R-14));
+  }
+  const heading = (t*0.003) % (Math.PI*2);
+  dx.strokeStyle = accent; dx.lineWidth = 2;
+  dx.beginPath(); dx.moveTo(cx,cy);
+  dx.lineTo(cx+Math.cos(heading-Math.PI/2)*R*0.78, cy+Math.sin(heading-Math.PI/2)*R*0.78);
+  dx.stroke();
+  dx.fillStyle = accent; dx.beginPath(); dx.arc(cx,cy,3,0,Math.PI*2); dx.fill();
+  dx.fillStyle = "#fff"; dx.globalAlpha = 0.8;
+  dx.font = "11px JetBrains Mono,monospace";
+  const deg = Math.round((heading/(Math.PI*2))*360);
+  dx.fillText(`HDG ${String(deg).padStart(3,"0")}°`, cx, cy + R + 14);
+  dx.globalAlpha = 1;
+}
+
+function drawGauge(){
+  const r = gauge.getBoundingClientRect();
+  const W2 = r.width, H2 = r.height;
+  if (!W2) return;
+  gx.clearRect(0,0,W2,H2);
+  const cx = W2/2, cy = H2*0.85, R = Math.min(W2,H2*1.6)*0.42;
+  const accent = getComputedStyle(document.body).getPropertyValue("--accent").trim();
+  const a0 = Math.PI*1.15, a1 = Math.PI*1.85;
+  gx.strokeStyle = "rgba(255,255,255,0.18)"; gx.lineWidth = 6;
+  gx.beginPath(); gx.arc(cx,cy,R,a0,a1); gx.stroke();
+  const val = STATE.batt != null ? STATE.batt : STATE.pwrTarget;
+  const a = a0 + (a1-a0) * (val/100);
+  gx.strokeStyle = accent; gx.lineWidth = 6;
+  gx.shadowColor = accent; gx.shadowBlur = 10;
+  gx.beginPath(); gx.arc(cx,cy,R,a0,a); gx.stroke();
+  gx.shadowBlur = 0;
+  gx.strokeStyle = "rgba(255,255,255,0.5)"; gx.lineWidth = 1;
+  for (let i=0;i<=10;i++){
+    const ang = a0 + (a1-a0)*(i/10);
+    const r0 = R - 8, r1 = R + 4;
+    gx.beginPath();
+    gx.moveTo(cx+Math.cos(ang)*r0, cy+Math.sin(ang)*r0);
+    gx.lineTo(cx+Math.cos(ang)*r1, cy+Math.sin(ang)*r1);
+    gx.stroke();
+  }
+  gx.fillStyle = "#fff"; gx.font = "bold 18px JetBrains Mono,monospace";
+  gx.textAlign = "center"; gx.textBaseline = "middle";
+  gx.fillText(Math.round(val) + "%", cx, cy - R*0.45);
+  gx.font = "9px JetBrains Mono,monospace"; gx.fillStyle = "rgba(255,255,255,0.6)";
+  gx.fillText("ARC OUTPUT", cx, cy - R*0.45 + 16);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   MAIN LOOP — 30 fps, pause on hidden tab
+   ════════════════════════════════════════════════════════════════ */
+const FRAME_MS = 1000 / 30;
+let _lastFrame = 0, _dialFrame = 0;
+function loop(ts){
+  if (document.hidden){ setTimeout(()=>requestAnimationFrame(loop), 500); return; }
+  if (!_lastFrame) _lastFrame = ts;
+  if (ts - _lastFrame >= FRAME_MS){
+    _lastFrame = ts;
+    drawOrb(); drawWave();
+    if (++_dialFrame >= 6){ _dialFrame = 0; drawDial(); drawGauge(); }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden){ _lastFrame = 0; _dialFrame = 0; }
+});
+
+setTimeout(()=>addLine("JARVIS online. Awaiting orders, Sir.","jarvis"), 1600);
+</script>
+</body>
+</html>
