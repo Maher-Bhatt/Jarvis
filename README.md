@@ -5,6 +5,14 @@ A Windows-native, voice-first AI personal assistant inspired by JARVIS from Iron
 
 Lives quietly in the background. Wakes on **"Hey KALKI"**. Speaks in a natural neural voice. Manages your day, runs your code, hacks your hashes, scans websites for vulnerabilities, and reads your calendar — all through one Iron Man-style HUD.
 
+![KALKI HUD](screenshots/kalki-hud.png)
+
+> The HUD is **state-reactive** — the whole interface retunes its colour as KALKI idles, listens, thinks, and speaks:
+
+| Idle (saffron) | Listening (peacock) |
+|:---:|:---:|
+| ![idle](screenshots/kalki-standby.png) | ![listening](screenshots/kalki-listening.png) |
+
 ---
 
 ## Highlights
@@ -157,48 +165,77 @@ C:\Kalki\
 
 ---
 
-## Quick Start
+## Setup
 
 ### Requirements
-- Windows 10/11
-- Python 3.11
-- A microphone
-- A free [Groq API key](https://console.groq.com)
+- **Windows 10/11**
+- **Python 3.11** — install from [python.org](https://www.python.org/downloads/release/python-3119/) and tick **"Add Python to PATH"**
+- A **microphone**
+- A **free Groq API key** (the only thing that's required — takes 1 minute)
 
-### Install
+---
+
+### Step 1 — Get your free Groq API key  *(required)*
+
+KALKI's brain runs on [Groq](https://console.groq.com) (free, very fast LLaMA inference).
+
+1. Go to **<https://console.groq.com>** and sign in (Google login works).
+2. In the left menu open **API Keys**.
+3. Click **Create API Key**, give it a name (e.g. `kalki`), and **Create**.
+4. **Copy the key** — it looks like `gsk_xxxxxxxxxxxxxxxxxxxx`. You only see it once, so copy it now.
+
+> 🔒 This key is yours. Keep it private — anyone with it can use your Groq quota.
+
+---
+
+### Step 2 — Download & configure
+
 ```bat
-git clone https://github.com/<your-username>/kalki.git C:\Kalki
+git clone https://github.com/Maher-Bhatt/KALKI.git C:\Kalki
 cd C:\Kalki
 copy config.example.py config.py
-:: Edit config.py and paste your GROQ_API_KEY
-INSTALL.bat
 ```
 
-`INSTALL.bat` runs:
+Open **`config.py`** in any editor and paste your key:
+
+```python
+GROQ_API_KEY = "gsk_your_key_here"   # <- paste the key from Step 1
+OWNER_NAME   = "YourName"            # how KALKI addresses you
+OWNER_CITY   = "YourCity"            # for the weather line
+```
+
+> ⚠️ **`config.py` is gitignored** — your keys live only on your machine and are never committed. Never put real keys in `config.example.py`.
+
+---
+
+### Step 3 — Install & run
+
 ```bat
-py -3.11 -m pip install -r requirements.txt
+INSTALL.bat        :: installs Python dependencies
+START.bat          :: launches KALKI
 ```
 
-### Run
-```bat
-START.bat
-```
+Within a couple of seconds you'll hear a greeting, Chrome opens to **`http://localhost:8888`**, and the HUD appears. Say **"Hey KALKI"** to talk to it.
 
-Within 2 seconds you'll hear *"Good morning, Sir. It's Sunday. Sunny 30 outside."* Chrome opens to `http://localhost:8888` and the HUD appears.
-
-### Make it auto-start on every boot
+**Auto-start on every boot (optional):**
 ```bat
 py -3.11 launcher.py
 ```
-That registers KALKI under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` and drops a Startup-folder shortcut. From then on, KALKI launches silently on every login. To uninstall autostart, remove the `KALKI_v5` registry value.
+Registers KALKI under `HKCU\...\Run` + a Startup shortcut so it launches silently each login. To remove, delete the `KALKI_v5` registry value.
 
-### Optional integrations
-| Integration | One-time setup |
+---
+
+### Step 4 — Optional integrations
+
+All optional — KALKI works fully without them.
+
+| Integration | How to set up |
 |---|---|
-| **Google Calendar + Gmail** | Create OAuth client at console.cloud.google.com (Desktop type, redirect `http://localhost`), download JSON to `data/google_credentials.json`, run `py -3.11 setup_google.py` |
-| **Spotify** | Create app at developer.spotify.com/dashboard (redirect `http://127.0.0.1:8889/callback`), paste Client ID/Secret into config.py, run `py -3.11 setup_spotify.py` |
-| **Tesseract OCR** (vision fallback) | Install from https://github.com/UB-Mannheim/tesseract/wiki |
-| **Wordlist for hash cracking** | Drop a wordlist at `data/wordlist.txt` |
+| **Google Calendar + Gmail** | At [console.cloud.google.com](https://console.cloud.google.com): create a project → enable **Calendar API** + **Gmail API** → **OAuth consent screen** (External, add your email as a test user) → **Credentials → OAuth client ID → Desktop app** → download the JSON to `data/google_credentials.json` → run `py -3.11 setup_google.py` and approve in the browser. |
+| **Spotify** | At [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard): create an app, set redirect URI **`http://127.0.0.1:8889/callback`**, copy the **Client ID + Secret** into `config.py`, then run `py -3.11 setup_spotify.py`. |
+| **Offline brain** | Install [Ollama](https://ollama.com) and `ollama pull qwen2.5:7b` — KALKI falls back to it when offline. |
+| **Tesseract OCR** (vision text fallback) | Install from the [UB-Mannheim build](https://github.com/UB-Mannheim/tesseract/wiki). |
+| **Wordlist** (hash cracking) | Drop a wordlist at `data/wordlist.txt`. |
 
 ---
 
