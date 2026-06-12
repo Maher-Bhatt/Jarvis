@@ -3,66 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>T.O.M.M.Y.</title>
+<title>K.A.L.K.I.</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Rajdhani:wght@500;600;700&family=Mukta:wght@500;700&display=swap');
 /* ════════════════════════════════════════════════════════════════
-   T.O.M.M.Y. — Monochrome + Neon Accent Theme
+   K.A.L.K.I. — Monochrome + Neon Accent Theme
    Black & white base, single state-driven accent color that
-   shifts through magenta / orange / lime as TOMMY reacts.
+   shifts through magenta / orange / lime as KALKI reacts.
    ════════════════════════════════════════════════════════════════ */
 
 :root{
-  --bg:        #000000;
-  --bg-elev:   #0a0a0d;
-  --bg-panel:  #08080b;
-  --text:      #ffffff;
-  --text-dim:  #888a90;
-  --frame:     rgba(255,255,255,0.14);
-  --frame-strong: rgba(255,255,255,0.32);
+  --bg:        #16060a;
+  --bg-elev:   #240a12;
+  --bg-panel:  #1d0810;
+  --text:      #fde6c9;
+  --text-dim:  #c79a63;
+  --frame:     rgba(255,196,92,0.22);
+  --frame-strong: rgba(255,196,92,0.5);
 
-  /* Neon accent palette — picked per state */
-  --magenta:   #ff0080;
-  --pink:      #ff5dbe;
-  --violet:    #a259ff;
-  --lime:      #00ff80;
-  --aqua:      #00ffd5;
-  --orange:    #ff8800;
-  --yellow:    #ffd400;
-  --red:       #ff3344;
+  /* Festive Indian palette */
+  --maroon:     #6a0f1a;
+  --saffron:    #ff7518;
+  --marigold:   #ffae00;
+  --gold:       #ffcf40;
+  --gold-deep:  #c8902a;
+  --gold-bright:#ffe79a;
+  --peacock:    #0aa17e;
+  --peacock-blue:#10b5d6;
+  --vermillion: #e8402c;
+  --pink:       #e0218a;
+  --turmeric:   #f4c430;
+  --lime:       #2fbf71;
+  --orange:     #ff8800;
+  --yellow:     #ffd400;
+  --red:        #e8402c;
 
   /* Current state accent (JS swaps these via body class) */
-  --accent:       #ffffff;
-  --accent-glow:  rgba(255,255,255,0.35);
-  --accent-soft:  rgba(255,255,255,0.08);
+  --accent:      #ff9e2c;
+  --accent-glow: rgba(255,158,44,0.45);
+  --accent-soft: rgba(255,158,44,0.12);
 }
 
-/* state-driven accents */
-body.mode-idle      { --accent:#ffffff; --accent-glow:rgba(255,255,255,0.30); --accent-soft:rgba(255,255,255,0.06); }
-body.mode-listening { --accent:#ff0080; --accent-glow:rgba(255,0,128,0.45);   --accent-soft:rgba(255,0,128,0.10);   }
-body.mode-thinking  { --accent:#ff8800; --accent-glow:rgba(255,136,0,0.50);   --accent-soft:rgba(255,136,0,0.10);   }
-body.mode-speaking  { --accent:#00ff80; --accent-glow:rgba(0,255,128,0.45);   --accent-soft:rgba(0,255,128,0.10);   }
+/* state-driven accents — Indian-flavored */
+body.mode-idle      { --accent:#ff9e2c; --accent-glow:rgba(255,158,44,0.42); --accent-soft:rgba(255,158,44,0.10); }
+body.mode-listening { --accent:#10b5d6; --accent-glow:rgba(16,181,214,0.50); --accent-soft:rgba(16,181,214,0.12); }
+body.mode-thinking  { --accent:#ffcf40; --accent-glow:rgba(255,207,64,0.55); --accent-soft:rgba(255,207,64,0.13); }
+body.mode-speaking  { --accent:#19a86b; --accent-glow:rgba(25,168,107,0.50); --accent-soft:rgba(25,168,107,0.12); }
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{
   width:100%;height:100%;overflow:hidden;
   background:var(--bg);
   color:var(--text);
-  font-family:"Inter","Segoe UI","Rajdhani",system-ui,sans-serif;
-  letter-spacing:0.3px;
+  font-family:"Rajdhani","Mukta","Segoe UI",system-ui,sans-serif;
+  letter-spacing:0.4px;
   user-select:none;
   transition: background .8s ease;
 }
 
-/* Animated grid background — pure black with slow-drift white grid */
+/* Indian backdrop: marigold top glow + maroon depth + drifting gold jali lattice */
 body::before{
   content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(0deg,  rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size:48px 48px;
-  animation: gridDrift 80s linear infinite;
+    radial-gradient(circle at 50% -8%, rgba(255,140,20,0.20) 0%, transparent 46%),
+    radial-gradient(circle at 50% 120%, rgba(120,12,30,0.55) 0%, transparent 56%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23ffb84d' stroke-width='1' stroke-opacity='0.13'%3E%3Ccircle cx='0' cy='0' r='16'/%3E%3Ccircle cx='64' cy='0' r='16'/%3E%3Ccircle cx='0' cy='64' r='16'/%3E%3Ccircle cx='64' cy='64' r='16'/%3E%3Ccircle cx='32' cy='32' r='16'/%3E%3C/g%3E%3C/svg%3E");
+  background-size:auto, auto, 64px 64px;
+  animation: jaliDrift 120s linear infinite;
 }
-@keyframes gridDrift{ to { background-position:48px 48px; } }
+@keyframes jaliDrift{ to { background-position:0 0, 0 0, 64px 64px; } }
 
 /* Radial accent glow follows state */
 body::after{
@@ -101,40 +110,44 @@ body::after{
 
 /* ── Top bar ────────────────────────────────────── */
 .topbar{
-  position:fixed;top:0;left:0;right:0;height:62px;z-index:20;
+  position:fixed;top:0;left:0;right:0;height:64px;z-index:20;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 28px;
-  border-bottom:1px solid var(--frame);
-  background:linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.2));
+  border-bottom:2px solid transparent;
+  border-image:linear-gradient(90deg, transparent, var(--gold), var(--marigold), var(--gold), transparent) 1;
+  background:linear-gradient(to bottom, rgba(40,8,16,0.92), rgba(22,6,10,0.55));
+  box-shadow:0 6px 22px rgba(0,0,0,0.5), 0 1px 0 var(--accent-soft);
 }
 .brand{display:flex;align-items:center;gap:14px}
 .brand-mark{
-  width:36px;height:36px;
-  border:2px solid var(--accent);
-  position:relative;border-radius:4px;
-  box-shadow: 0 0 18px var(--accent-glow),
-              inset 0 0 14px var(--accent-glow);
-  transition: border-color .55s ease, box-shadow .55s ease, transform 6s ease-in-out;
-  animation: brandSway 8s ease-in-out infinite;
+  width:42px;height:42px;position:relative;
+  display:flex;align-items:center;justify-content:center;
 }
-@keyframes brandSway{
-  0%,100% { transform: rotate(0deg); }
-  50%     { transform: rotate(1.5deg); }
+.brand-mark .chakra{
+  width:100%;height:100%;
+  filter: drop-shadow(0 0 8px var(--accent-glow))
+          drop-shadow(0 0 14px rgba(255,180,60,0.35));
+  transition: filter .55s ease;
 }
-.brand-mark::before,.brand-mark::after{
-  content:"";position:absolute;background:var(--accent);
-  box-shadow:0 0 6px var(--accent);
-  transition: background .55s ease;
+.brand-mark .chakra-spin{
+  transform-origin:50px 50px;
+  animation: chakraSpin 24s linear infinite;
 }
-.brand-mark::before{ top:50%;left:8%;right:8%;height:2px;transform:translateY(-50%); }
-.brand-mark::after { left:50%;top:8%;bottom:8%;width:2px;transform:translateX(-50%); }
+@keyframes chakraSpin{
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
 .brand h1{
-  font-size:20px;font-weight:700;letter-spacing:6px;color:var(--text);
-  text-shadow: 0 0 14px var(--accent-glow);
+  font-family:"Cinzel",serif;
+  font-size:21px;font-weight:700;letter-spacing:7px;
+  background:linear-gradient(180deg, var(--gold-bright), var(--marigold) 60%, var(--gold-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow: 0 0 18px var(--accent-glow);
   transition: text-shadow .55s ease;
 }
 .brand .sub{
-  font-size:9px;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
+  font-size:9px;color:var(--gold-deep);letter-spacing:3px;text-transform:uppercase;
+  font-weight:600;
 }
 .top-meta{
   display:flex;gap:22px;font-size:11px;color:var(--text-dim);
@@ -145,12 +158,13 @@ body::after{
 /* ── Status pill ───────────────────────────────── */
 .pill{
   position:fixed;top:80px;left:50%;transform:translateX(-50%);
-  padding:8px 22px;font-size:10px;letter-spacing:6px;
+  padding:8px 24px;font-size:10px;letter-spacing:6px;
   color:var(--accent);
   border:1px solid var(--accent);
-  border-radius:999px;background:rgba(0,0,0,0.7);
-  text-transform:uppercase;z-index:25;
-  box-shadow: 0 0 24px var(--accent-glow), inset 0 0 12px var(--accent-soft);
+  border-radius:999px;background:linear-gradient(180deg, rgba(45,10,18,0.85), rgba(15,5,8,0.85));
+  text-transform:uppercase;z-index:25;font-weight:600;
+  box-shadow: 0 0 26px var(--accent-glow), inset 0 0 14px var(--accent-soft),
+              0 0 0 4px rgba(255,196,92,0.06);
   transition: color .55s ease, border-color .55s ease, box-shadow .55s ease;
   font-weight:600;
 }
@@ -166,10 +180,11 @@ body::after{
 
 /* ── Corner brackets ───────────────────────────── */
 .corner{
-  position:fixed;width:60px;height:60px;z-index:18;pointer-events:none;
-  border:2px solid var(--accent);
-  transition: border-color .55s ease;
-  opacity:.45;
+  position:fixed;width:64px;height:64px;z-index:18;pointer-events:none;
+  border:2px solid var(--gold);
+  box-shadow: inset 6px 6px 0 -4px var(--accent), 0 0 14px var(--accent-soft);
+  transition: border-color .55s ease, box-shadow .55s ease;
+  opacity:.6;
 }
 .corner.tl{top:74px;left:18px;border-right:none;border-bottom:none}
 .corner.tr{top:74px;right:18px;border-left:none;border-bottom:none}
@@ -178,14 +193,17 @@ body::after{
 
 /* ── HUD side panels ────────────────────────────── */
 .hud{
-  position:fixed;width:280px;z-index:15;
-  border:1px solid var(--frame);
-  background: linear-gradient(135deg, rgba(8,8,11,0.92), rgba(0,0,0,0.95));
-  padding:14px 16px;font-size:12px;
-  clip-path:polygon(0 12px,12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px));
+  position:fixed;width:282px;z-index:15;
+  border:1px solid var(--frame-strong);
+  background:
+    linear-gradient(135deg, rgba(45,10,18,0.95), rgba(20,6,10,0.97));
+  padding:15px 17px;font-size:12px;
+  clip-path:polygon(0 14px,14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px));
   box-shadow:
-    0 0 30px var(--accent-glow),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    0 0 34px rgba(0,0,0,0.6),
+    0 0 22px var(--accent-soft),
+    inset 0 0 0 1px rgba(255,196,92,0.10),
+    inset 0 1px 0 rgba(255,220,150,0.08);
   transition: box-shadow .8s ease;
 }
 .hud.left { top:115px; left:24px; }
@@ -194,11 +212,20 @@ body::after{
 .hud.right::-webkit-scrollbar-thumb{ background:var(--frame); }
 
 .hud .title{
-  font-size:9px;letter-spacing:3.5px;color:var(--accent);
+  font-family:"Cinzel",serif;
+  font-size:10px;letter-spacing:3px;color:var(--gold);
   text-transform:uppercase;margin-bottom:10px;
   display:flex;justify-content:space-between;align-items:center;
   transition: color .55s ease;
   font-weight:700;
+  text-shadow:0 0 10px var(--accent-soft);
+}
+.hud .title::before{
+  content:"";flex:0 0 auto;width:15px;height:10px;margin-right:8px;
+  background: var(--accent); opacity:.9;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16'%3E%3Cpath fill='%23000' d='M12 15C12 8 8 4 12 1C16 4 12 8 12 15ZM12 15C7 11 3 11 2 7C8 7 11 11 12 15ZM12 15C17 11 21 11 22 7C16 7 13 11 12 15Z'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16'%3E%3Cpath fill='%23000' d='M12 15C12 8 8 4 12 1C16 4 12 8 12 15ZM12 15C7 11 3 11 2 7C8 7 11 11 12 15ZM12 15C17 11 21 11 22 7C16 7 13 11 12 15Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  transition: background .55s ease;
 }
 .hud .title::after{
   content:"";flex:1;height:1px;
@@ -254,12 +281,12 @@ body::after{
 /* ── Buttons (Quick / Tactical) — shimmer on hover ── */
 .qbtn{
   width:100%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-  color:var(--text);
+  background: linear-gradient(135deg, rgba(106,15,26,0.55), rgba(40,8,16,0.55));
+  color:var(--gold-bright);
   border:1px solid var(--frame);
-  padding:8px 10px;border-radius:2px;font-size:10px;
+  padding:9px 11px;border-radius:3px;font-size:10px;
   letter-spacing:2.5px;text-transform:uppercase;
-  margin-top:4px;cursor:pointer;font-family:inherit;font-weight:600;
+  margin-top:5px;cursor:pointer;font-family:inherit;font-weight:600;
   position:relative;overflow:hidden;
   transition: transform .18s ease, border-color .18s, color .18s, box-shadow .18s;
 }
@@ -309,7 +336,7 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
 .readout .line{
   display:block;margin:5px 0;padding:10px 14px 10px 18px;
   border:1px solid var(--frame);
-  background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, rgba(0,0,0,0.6) 100%);
+  background: linear-gradient(135deg, rgba(45,10,18,0.85) 0%, rgba(15,5,8,0.9) 100%);
   font-size:13px;line-height:1.55;color:var(--text);
   word-wrap:break-word;white-space:pre-wrap;
   position:relative;
@@ -323,8 +350,8 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
 }
 .readout .line.user        { color:var(--text); }
 .readout .line.user::before{ background:#ffffff; box-shadow:0 0 8px rgba(255,255,255,0.4); }
-.readout .line.tommy      { color:var(--text); }
-.readout .line.tommy::before{ background:var(--lime); box-shadow:0 0 8px rgba(0,255,128,0.5); }
+.readout .line.kalki      { color:var(--text); }
+.readout .line.kalki::before{ background:var(--lime); box-shadow:0 0 8px rgba(0,255,128,0.5); }
 .readout .line.error       { color:var(--red); border-color:rgba(255,51,68,0.45); }
 .readout .line.error::before{ background:var(--red); box-shadow:0 0 10px rgba(255,51,68,0.55); }
 @keyframes lineIn{
@@ -377,7 +404,7 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
   z-index:25;
 }
 #input{
-  flex:1;background:rgba(0,0,0,0.85);
+  flex:1;background:linear-gradient(180deg, rgba(45,10,18,0.92), rgba(15,5,8,0.95));
   border:1px solid var(--frame-strong);color:var(--text);
   padding:14px 22px;font-size:14px;font-family:inherit;outline:none;
   letter-spacing:0.5px;
@@ -452,20 +479,21 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
 .foot-tag{
   position:fixed;bottom:6px;left:50%;transform:translateX(-50%);
   z-index:6;pointer-events:none;
-  font-size:10px;letter-spacing:14px;color:rgba(255,255,255,0.15);
+  font-size:10px;letter-spacing:14px;color:rgba(255,196,92,0.30);
   font-weight:700;
 }
 
 /* ── Boot sequence overlay ─────────────────────── */
 .boot{
-  position:fixed;inset:0;z-index:60;background:#000;
+  position:fixed;inset:0;z-index:60;
+  background:radial-gradient(circle at 50% 40%, #2a0810 0%, #0d0306 70%);
   display:flex;flex-direction:column;justify-content:center;align-items:center;
-  font-family:"JetBrains Mono","Consolas",monospace;color:#fff;
+  font-family:"JetBrains Mono","Consolas",monospace;color:var(--gold-bright);
   letter-spacing:1px;font-size:12px;
   transition: opacity .8s;
 }
-.boot pre{color:#fff;font-size:11px;line-height:1.2;margin-bottom:20px;
-          text-shadow:0 0 12px rgba(255,255,255,0.5)}
+.boot pre{color:var(--gold);font-size:11px;line-height:1.2;margin-bottom:20px;
+          text-shadow:0 0 14px var(--accent-glow)}
 .boot .lines{max-width:560px;width:100%;padding:0 24px}
 .boot .line{margin:2px 0;opacity:0;animation:fadein .3s forwards}
 .boot .line .ok{color:var(--lime)}
@@ -500,7 +528,7 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
   animation: wakeFlash .9s ease-out;
 }
 
-/* ── Typewriter cursor for TOMMY replies ──────── */
+/* ── Typewriter cursor for KALKI replies ──────── */
 .typing::after{
   content:"▮";
   margin-left:2px;
@@ -519,8 +547,8 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
 <div class="boot" id="boot">
   <pre>
     ╔═══════════════════════════════════════════════════════╗
-    ║   T . O . M . M . Y .   v 5 . 0 0                 ║
-    ║   Tactical Operations Multi-domain Machine, Yours               ║
+    ║   K . A . L . K . I .   v 5 . 0 0                      ║
+    ║   The Final Avatar  ·  Autonomous AI                  ║
     ╚═══════════════════════════════════════════════════════╝</pre>
   <div class="lines" id="bootLines"></div>
 </div>
@@ -528,10 +556,64 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="brand">
-    <div class="brand-mark"></div>
+    <div class="brand-mark" title="KALKI — Sudarshana Chakra">
+      <svg viewBox="0 0 100 100" class="chakra" aria-hidden="true">
+        <defs>
+          <radialGradient id="kalkiGold" cx="50%" cy="50%" r="55%">
+            <stop offset="0%"  stop-color="#fff3cf"/>
+            <stop offset="45%" stop-color="#ffcf6a"/>
+            <stop offset="100%" stop-color="#e0901f"/>
+          </radialGradient>
+        </defs>
+        <!-- outer flame/serrated discus ring -->
+        <g class="chakra-spin" fill="none" stroke="url(#kalkiGold)">
+          <circle cx="50" cy="50" r="47" stroke-width="2"/>
+          <circle cx="50" cy="50" r="40" stroke-width="1"/>
+          <!-- 24 outer flame teeth -->
+          <g stroke-width="2.4" stroke-linecap="round">
+            <line x1="50" y1="3"  x2="50" y2="11"/>
+            <line x1="62.2" y1="4.6" x2="60.1" y2="12.4"/>
+            <line x1="73.5" y1="9.3" x2="69.5" y2="16.2"/>
+            <line x1="83.4" y1="16.6" x2="77.9" y2="22.1"/>
+            <line x1="90.7" y1="26.5" x2="83.8" y2="30.5"/>
+            <line x1="95.4" y1="37.8" x2="87.6" y2="39.9"/>
+            <line x1="97" y1="50" x2="89" y2="50"/>
+            <line x1="95.4" y1="62.2" x2="87.6" y2="60.1"/>
+            <line x1="90.7" y1="73.5" x2="83.8" y2="69.5"/>
+            <line x1="83.4" y1="83.4" x2="77.9" y2="77.9"/>
+            <line x1="73.5" y1="90.7" x2="69.5" y2="83.8"/>
+            <line x1="62.2" y1="95.4" x2="60.1" y2="87.6"/>
+            <line x1="50" y1="97" x2="50" y2="89"/>
+            <line x1="37.8" y1="95.4" x2="39.9" y2="87.6"/>
+            <line x1="26.5" y1="90.7" x2="30.5" y2="83.8"/>
+            <line x1="16.6" y1="83.4" x2="22.1" y2="77.9"/>
+            <line x1="9.3" y1="73.5" x2="16.2" y2="69.5"/>
+            <line x1="4.6" y1="62.2" x2="12.4" y2="60.1"/>
+            <line x1="3" y1="50" x2="11" y2="50"/>
+            <line x1="4.6" y1="37.8" x2="12.4" y2="39.9"/>
+            <line x1="9.3" y1="26.5" x2="16.2" y2="30.5"/>
+            <line x1="16.6" y1="16.6" x2="22.1" y2="22.1"/>
+            <line x1="26.5" y1="9.3" x2="30.5" y2="16.2"/>
+            <line x1="37.8" y1="4.6" x2="39.9" y2="12.4"/>
+          </g>
+          <!-- 12 inner spokes (6 diameters) -->
+          <g stroke-width="1.6">
+            <line x1="6" y1="50" x2="94" y2="50"/>
+            <line x1="11.9" y1="28" x2="88.1" y2="72"/>
+            <line x1="28" y1="11.9" x2="72" y2="88.1"/>
+            <line x1="50" y1="6" x2="50" y2="94"/>
+            <line x1="72" y1="11.9" x2="28" y2="88.1"/>
+            <line x1="88.1" y1="28" x2="11.9" y2="72"/>
+          </g>
+        </g>
+        <!-- hub -->
+        <circle cx="50" cy="50" r="12" fill="url(#kalkiGold)"/>
+        <circle cx="50" cy="50" r="4.5" fill="#1b1205"/>
+      </svg>
+    </div>
     <div>
-      <h1>T.O.M.M.Y.</h1>
-      <div class="sub">Tactical Operations Multi-domain Machine, Yours</div>
+      <h1>K.A.L.K.I.</h1>
+      <div class="sub">The Final Avatar · Autonomous AI</div>
     </div>
   </div>
   <div class="top-meta">
@@ -564,7 +646,7 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
   <div class="title" style="margin-top:14px">CORE SUBSYSTEMS</div>
   <div class="row"><span>GROQ AI</span><span class="v" id="sGroq">…</span></div>
   <div class="row"><span>OLLAMA</span><span class="v" id="sOllama">…</span></div>
-  <div class="row"><span>VOICE</span><span class="v ok">en-GB-Ryan</span></div>
+  <div class="row"><span>VOICE</span><span class="v ok">Brian · Neural</span></div>
   <div class="row"><span>MIC LINK</span><span class="v" id="sMic">stand-by</span></div>
   <div class="row"><span>MEM BANK</span><span class="v cy" id="sMem">0</span></div>
   <div class="row"><span>UPTIME</span><span class="v cy" id="sUp">0s</span></div>
@@ -649,7 +731,7 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
   <div class="dropContent">
     <div class="dropIcon">⬇</div>
     <div class="dropText">DROP TO ATTACH</div>
-    <div class="dropHint">image / code / text — TOMMY will analyze</div>
+    <div class="dropHint">image / code / text — KALKI will analyze</div>
   </div>
 </div>
 <div id="attachStrip"></div>
@@ -663,7 +745,7 @@ select.qbtn{ appearance:none; background:rgba(0,0,0,0.5); }
   <button class="iconBtn" id="sendBtn" title="Send">▶</button>
 </div>
 
-<div class="foot-tag">T · O · M · M · Y</div>
+<div class="foot-tag">K · A · L · K · I</div>
 <div class="reticle" id="reticle"></div>
 
 <script>
@@ -763,7 +845,7 @@ async function refreshStatus(){
 
     if (d.conversationSeq && d.conversationSeq > lastSeenSeq && d.recentExchange){
       addLine(d.recentExchange.user, "user");
-      addLine(d.recentExchange.reply, "tommy");
+      addLine(d.recentExchange.reply, "kalki");
       pushStream("voice command captured","hot");
       lastSeenSeq = d.conversationSeq;
     } else if (d.conversationSeq && lastSeenSeq === 0) {
@@ -927,7 +1009,7 @@ function typewriter(el, text, speed=14){
 
 function addLine(text, who){
   const ro = $("readout");
-  if (who === "tommy" && /```[\s\S]*?```/.test(text)){
+  if (who === "kalki" && /```[\s\S]*?```/.test(text)){
     const segs = parseCodeBlocks(text);
     for (const s of segs){
       if (s.type === "code"){
@@ -936,14 +1018,14 @@ function addLine(text, who){
         const t = s.text.trim();
         if (!t) continue;
         const div = document.createElement("div");
-        div.className = "line tommy";
+        div.className = "line kalki";
         ro.appendChild(div);
         typewriter(div, t);
       }
     }
-  } else if (who === "tommy"){
+  } else if (who === "kalki"){
     const div = document.createElement("div");
-    div.className = "line tommy";
+    div.className = "line kalki";
     ro.appendChild(div);
     typewriter(div, text);
   } else {
@@ -1069,7 +1151,7 @@ async function send(text){
         body: JSON.stringify({image:firstImage.data, question:question}),
       });
       const d = await r.json();
-      addLine(d.reply || "...", "tommy");
+      addLine(d.reply || "...", "kalki");
       pushStream("vision reply received");
       setMode("speaking");
       const dur = Math.min(14000, Math.max(2200, (d.reply||"").length * 55));
@@ -1108,7 +1190,7 @@ async function send(text){
     const d = await r.json();
     const reply = d.reply || "...";
     STATE.history.push({role:"assistant", content:reply});
-    addLine(reply, "tommy");
+    addLine(reply, "kalki");
     pushStream("response received ("+(d.source||"ai")+")");
     setMode("speaking");
     const dur = Math.min(14000, Math.max(2200, reply.length * 55));
@@ -1159,10 +1241,34 @@ if (SR){
   recognizer.onend = ()=>{ if (STATE.micActive){ try{recognizer.start()}catch(e){} } };
 }
 let audioCtx=null, analyser=null, micSrc=null, micStream=null;
+async function pickNonBtMic(){
+  try{
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const ins = devs.filter(d=>d.kind==='audioinput' && d.deviceId && d.deviceId!=='default');
+    const bt = /bluetooth|hands-?free|headset|airpods|wireless|hfp|hsp/i;
+    const good = /built-?in|internal|array|realtek/i;
+    const pick = ins.find(d=>!bt.test(d.label) && good.test(d.label))
+              || ins.find(d=>!bt.test(d.label));
+    return pick ? pick.deviceId : null;
+  }catch(e){ return null; }
+}
 async function enableMic(){
   if (audioCtx) return;
   try{
+    // First grant (also unlocks device labels for enumeration)
     micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    // Switch to a non-Bluetooth mic so a BT headset stays in high-quality
+    // A2DP instead of dropping to muffled HFP whenever the mic is live.
+    const id = await pickNonBtMic();
+    if (id){
+      try{
+        micStream.getTracks().forEach(t=>t.stop());
+        micStream = await navigator.mediaDevices.getUserMedia({audio:{
+          deviceId:{exact:id},
+          echoCancellation:true, noiseSuppression:true, autoGainControl:true
+        }});
+      }catch(e){ /* keep the original stream if the switch fails */ }
+    }
     audioCtx = new (window.AudioContext||window.webkitAudioContext)();
     micSrc = audioCtx.createMediaStreamSource(micStream);
     analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
@@ -1202,7 +1308,9 @@ window.addEventListener("mousemove", e=>{
    CANVAS — Arc reactor (monochrome + accent)
    ════════════════════════════════════════════════════════════════ */
 const orb = $("orb"), ox = orb.getContext("2d");
-let W=0, H=0, DPR = Math.max(1, window.devicePixelRatio||1);
+// Cap pixel density: a full-screen mandala at 2-3x DPR is the main GPU/heat
+// cost. 1.5x still looks crisp but draws far fewer pixels.
+let W=0, H=0, DPR = Math.min(1.5, Math.max(1, window.devicePixelRatio||1));
 function resizeOrb(){
   W = window.innerWidth; H = window.innerHeight;
   orb.width = W*DPR; orb.height = H*DPR;
@@ -1257,12 +1365,16 @@ function sampleTime(){
 }
 
 let t = 0;
+let chakraAngle = 0;   // accumulated so speed changes are smooth (no snap)
 function drawOrb(){
   t++;
   const C = modeColors();
   const cx = W/2, cy = H/2;
   const R = Math.min(W,H) * 0.165;
   const sp = C.speed;
+  // Dharma wheel accelerates hard while KALKI is thinking.
+  const chakraSp = (STATE.mode === "thinking") ? sp*2.4 : sp;
+  chakraAngle += 0.0016 * chakraSp;
 
   ox.clearRect(0,0,W,H);
 
@@ -1281,8 +1393,8 @@ function drawOrb(){
 
   sampleFreq();
 
-  // frequency bars in accent color
-  const barInner = R*1.08, barMax = R*0.55;
+  // ── mic-reactive bars (outer aura, gold) ──
+  const barInner = R*1.62, barMax = R*0.34;
   for (let i=0;i<72;i++){
     const a = (i/72)*Math.PI*2 + t*0.003*sp;
     const v = STATE.freqData[i]/255;
@@ -1290,47 +1402,45 @@ function drawOrb(){
     const x1 = cx + Math.cos(a)*barInner, y1 = cy + Math.sin(a)*barInner;
     const x2 = cx + Math.cos(a)*(barInner+len), y2 = cy + Math.sin(a)*(barInner+len);
     ox.strokeStyle = C.ring;
-    ox.globalAlpha = 0.35 + v*0.65;
+    ox.globalAlpha = 0.30 + v*0.65;
     ox.lineWidth = 2;
     ox.beginPath(); ox.moveTo(x1,y1); ox.lineTo(x2,y2); ox.stroke();
   }
   ox.globalAlpha = 1;
 
-  drawArcRing(cx,cy, R*1.50, 36, t*0.004*sp, "#ffffff", 1.6, 0.35);
-  drawTextRing(cx,cy, R*1.62, "TOMMY · GROQ · LLAMA · NEURAL · ONLINE · ARC ·", t*0.0014*sp, "#ffffff", 10);
-  drawArcRing(cx,cy, R*1.28, 24, -t*0.006*sp, C.ring, 1.6, 0.55);
-  drawArcRing(cx,cy, R*1.12, 16, t*0.012*sp, C.ring, 1.2, 0.5);
+  // ── rotating mantra/status ring ──
+  drawTextRing(cx,cy, R*2.06, "KALKI · GROQ · LLAMA · NEURAL · ONLINE · ARC · ", t*0.0013*sp, C.ring, 10);
 
-  // hex cells
-  for (let i=0;i<12;i++){
-    const ang = (i/12)*Math.PI*2 + t*0.002*sp;
-    const cxh = cx + Math.cos(ang) * R*0.78;
-    const cyh = cy + Math.sin(ang) * R*0.78;
-    const phase = (Math.sin(t*0.08 + i*0.7) + 1)/2;
-    drawHex(cxh, cyh, R*0.10, C.ring, 0.25 + phase*0.75);
+  // ── Ashoka Chakra — 24-spoke dharma wheel (spins faster when thinking) ──
+  drawChakraWheel(cx,cy, R*1.52, 24, chakraAngle, C.ring, 0.55);
+
+  // ── lotus mandala rings ──
+  drawLotusRing(cx,cy, R*0.98, R*1.36, 16, -t*0.0012*sp, C.ring,      0.42, false);
+  drawLotusRing(cx,cy, R*0.86, R*1.16, 12,  t*0.0019*sp, C.ring,      0.14, true);
+  drawLotusRing(cx,cy, R*0.74, R*1.02,  8, -t*0.0024*sp, "#ffe6ad",   0.62, false);
+
+  // ── mandala studs (diamonds at spoke tips) ──
+  for (let i=0;i<24;i++){
+    const a=(i/24)*Math.PI*2 + chakraAngle;
+    const dxp=cx+Math.cos(a)*R*1.44, dyp=cy+Math.sin(a)*R*1.44;
+    const ph=(Math.sin(t*0.06+i*0.5)+1)/2;
+    drawDiamond(dxp,dyp, 2.0+ph*1.8, C.ring, 0.30+ph*0.6);
   }
 
-  // particles
+  // ── orbiting particles (gold sparks) ──
   for (const p of ORBIT){
     p.a += 0.005*sp*p.s;
-    const rr = R*(1.18+p.r*0.5) + Math.sin(t*0.01+p.a*3)*4;
+    const rr = R*(1.30+p.r*0.5) + Math.sin(t*0.01+p.a*3)*4;
     const px = cx + Math.cos(p.a)*rr, py = cy + Math.sin(p.a)*rr;
-    ox.fillStyle = "#ffffff";
-    ox.globalAlpha = 0.8;
+    ox.fillStyle = "#ffe6ad";
+    ox.globalAlpha = 0.75;
     ox.beginPath(); ox.arc(px,py,p.size,0,Math.PI*2); ox.fill();
   }
   ox.globalAlpha = 1;
 
-  // hex bolts
-  for (let i=0;i<6;i++){
-    const a = (i/6)*Math.PI*2 + t*0.004*sp;
-    const bx = cx + Math.cos(a)*R*1.50, by = cy + Math.sin(a)*R*1.50;
-    drawHex(bx,by, 4.5, "#ffffff", 1);
-  }
-
-  // pulse ring
+  // ── pulse ring ──
   if (STATE.pulse > 0.01){
-    const pr = R*(1.25 + (1-STATE.pulse)*1.7);
+    const pr = R*(1.35 + (1-STATE.pulse)*1.7);
     ox.strokeStyle = C.ring;
     ox.globalAlpha = STATE.pulse*0.85;
     ox.lineWidth = 2.5;
@@ -1339,36 +1449,35 @@ function drawOrb(){
     STATE.pulse *= 0.94;
   }
 
-  // petal vents
-  ox.save(); ox.translate(cx,cy); ox.rotate(t*0.0015*sp);
-  for (let i=0;i<6;i++){
-    const a = (i/6)*Math.PI*2;
-    const x0 = Math.cos(a)*R*0.55, y0 = Math.sin(a)*R*0.55;
-    const x1 = Math.cos(a-0.20)*R*0.95, y1 = Math.sin(a-0.20)*R*0.95;
-    const x2 = Math.cos(a+0.20)*R*0.95, y2 = Math.sin(a+0.20)*R*0.95;
-    const g = ox.createRadialGradient(x0,y0,2, x0,y0,R*0.5);
-    g.addColorStop(0,"rgba(255,255,255,0.95)");
-    g.addColorStop(0.5, C.ring); g.addColorStop(1,"rgba(0,0,0,0)");
-    ox.fillStyle = g;
-    ox.beginPath(); ox.moveTo(x0,y0); ox.lineTo(x1,y1); ox.lineTo(x2,y2); ox.closePath(); ox.fill();
-  }
-  ox.restore();
+  // ── Surya core — golden sun, gently breathing ──
+  const flick = 1 + Math.sin(t*0.18)*0.025 + Math.sin(t*0.05)*0.02;
+  const halo2 = ox.createRadialGradient(cx,cy,R*0.1, cx,cy,R*1.15*flick);
+  halo2.addColorStop(0,"rgba(255,221,150,0.28)");
+  halo2.addColorStop(1,"rgba(0,0,0,0)");
+  ox.fillStyle = halo2;
+  ox.beginPath(); ox.arc(cx,cy,R*1.15*flick,0,Math.PI*2); ox.fill();
 
-  // core sphere — black with accent rim
-  const cg = ox.createRadialGradient(cx-R*0.25, cy-R*0.25, R*0.06, cx, cy, R);
-  cg.addColorStop(0, "rgba(255,255,255,0.98)");
-  cg.addColorStop(0.35, C.ring);
-  cg.addColorStop(1, "#000000");
+  const cg = ox.createRadialGradient(cx-R*0.18, cy-R*0.18, R*0.05, cx, cy, R);
+  cg.addColorStop(0, "#fff8ea");
+  cg.addColorStop(0.30, "#ffd482");
+  cg.addColorStop(0.62, "#ef9a2c");
+  cg.addColorStop(1, "#160c02");
   ox.fillStyle = cg;
-  ox.beginPath(); ox.arc(cx,cy,R,0,Math.PI*2); ox.fill();
+  ox.beginPath(); ox.arc(cx,cy,R*flick,0,Math.PI*2); ox.fill();
 
-  ox.strokeStyle = "rgba(255,255,255,0.12)"; ox.lineWidth = 1;
+  // trishul etched faintly into the core (Shiva's trident — pure shape)
+  drawTrishul(cx,cy, R*1.45, "rgba(255,249,233,0.28)");
+
+  // concentric mandala rings etched on the core
+  ox.strokeStyle = "rgba(22,12,2,0.32)"; ox.lineWidth = 1;
   ox.beginPath(); ox.arc(cx,cy,R*0.84,0,Math.PI*2); ox.stroke();
-  ox.beginPath(); ox.arc(cx,cy,R*0.68,0,Math.PI*2); ox.stroke();
-  ox.beginPath(); ox.arc(cx,cy,R*0.50,0,Math.PI*2); ox.stroke();
+  ox.beginPath(); ox.arc(cx,cy,R*0.66,0,Math.PI*2); ox.stroke();
+  ox.beginPath(); ox.arc(cx,cy,R*0.48,0,Math.PI*2); ox.stroke();
 
-  ox.fillStyle = "rgba(255,255,255,0.95)";
-  ox.beginPath(); ox.arc(cx,cy,3.5,0,Math.PI*2); ox.fill();
+  // 8-petal lotus bud radiating from the centre (sun rays)
+  drawLotusRing(cx,cy, R*0.10, R*0.42, 8, t*0.004*sp, "rgba(255,248,230,0.85)", 0.85, false);
+  ox.fillStyle = "#fff8ea";
+  ox.beginPath(); ox.arc(cx,cy,R*0.075,0,Math.PI*2); ox.fill();
 
   if (STATE.mouseX){
     ox.strokeStyle = accentRgba(0.18); ox.lineWidth = 1;
@@ -1414,6 +1523,95 @@ function drawHex(cx,cy,r,color,alpha=1){
   }
   ox.closePath(); ox.fill();
   ox.globalAlpha = 1;
+}
+
+/* Indian motifs ─────────────────────────────────────────────── */
+// Ring of lotus petals (almond/leaf shape) — the mandala signature.
+function drawLotusRing(cx,cy,rBase,rTip,count,phase,color,alpha,fill){
+  ox.globalAlpha = alpha;
+  for (let i=0;i<count;i++){
+    const a  = (i/count)*Math.PI*2 + phase;
+    const dw = (Math.PI/count)*0.92;          // half angular width
+    const rm = (rBase+rTip)/2;
+    const bx = cx+Math.cos(a)*rBase,    by = cy+Math.sin(a)*rBase;
+    const tx = cx+Math.cos(a)*rTip,     ty = cy+Math.sin(a)*rTip;
+    const lx = cx+Math.cos(a-dw)*rm,    ly = cy+Math.sin(a-dw)*rm;
+    const rx = cx+Math.cos(a+dw)*rm,    ry = cy+Math.sin(a+dw)*rm;
+    ox.beginPath();
+    ox.moveTo(bx,by);
+    ox.quadraticCurveTo(lx,ly, tx,ty);
+    ox.quadraticCurveTo(rx,ry, bx,by);
+    ox.closePath();
+    if (fill){ ox.fillStyle = color; ox.fill(); }
+    else { ox.strokeStyle = color; ox.lineWidth = 1.4; ox.stroke(); }
+  }
+  ox.globalAlpha = 1;
+}
+
+// Ashoka Chakra — 24-spoke dharma wheel with rim pips.
+function drawChakraWheel(cx,cy,r,spokes,phase,color,alpha){
+  ox.save(); ox.translate(cx,cy); ox.rotate(phase);
+  ox.globalAlpha = alpha; ox.strokeStyle = color; ox.fillStyle = color;
+  ox.lineWidth = 1.3;
+  ox.beginPath(); ox.arc(0,0,r,0,Math.PI*2); ox.stroke();
+  ox.beginPath(); ox.arc(0,0,r*0.90,0,Math.PI*2); ox.stroke();
+  ox.beginPath(); ox.arc(0,0,r*0.12,0,Math.PI*2); ox.stroke();
+  for (let i=0;i<spokes;i++){
+    const a = (i/spokes)*Math.PI*2;
+    ox.beginPath();
+    ox.moveTo(Math.cos(a)*r*0.12, Math.sin(a)*r*0.12);
+    ox.lineTo(Math.cos(a)*r*0.90, Math.sin(a)*r*0.90);
+    ox.stroke();
+    ox.beginPath();
+    ox.arc(Math.cos(a)*r*0.90, Math.sin(a)*r*0.90, 1.2, 0, Math.PI*2); ox.fill();
+  }
+  ox.restore(); ox.globalAlpha = 1;
+}
+
+// Small rotated-square stud for rangoli/mandala accents.
+function drawDiamond(cx,cy,s,color,alpha){
+  ox.save(); ox.translate(cx,cy); ox.rotate(Math.PI/4);
+  ox.globalAlpha = alpha; ox.fillStyle = color;
+  ox.fillRect(-s,-s,s*2,s*2);
+  ox.restore(); ox.globalAlpha = 1;
+}
+
+// Trishul (trident) — drawn as a clean vector, no script/text.
+function drawTrishul(cx,cy,h,color){
+  ox.save(); ox.translate(cx,cy);
+  ox.strokeStyle = color; ox.fillStyle = color;
+  ox.lineWidth = Math.max(1.3, h*0.013); ox.lineCap = "round"; ox.lineJoin = "round";
+  const w = h*0.26;                 // half-spread of the outer prongs
+  const top = -h*0.50, bot = h*0.50;
+  const base = -h*0.16;             // where the three prongs meet the shaft
+  // shaft
+  ox.beginPath(); ox.moveTo(0, base); ox.lineTo(0, bot*0.86); ox.stroke();
+  // centre prong
+  ox.beginPath(); ox.moveTo(0, base); ox.lineTo(0, top); ox.stroke();
+  // centre spear tip (leaf)
+  ox.beginPath();
+  ox.moveTo(0, top - h*0.05);
+  ox.quadraticCurveTo( w*0.16, top + h*0.02, 0, top + h*0.07);
+  ox.quadraticCurveTo(-w*0.16, top + h*0.02, 0, top - h*0.05);
+  ox.closePath(); ox.stroke();
+  // outer prongs — curve out from base, rise, finish in tips
+  for (const dir of [-1, 1]){
+    ox.beginPath();
+    ox.moveTo(0, base);
+    ox.quadraticCurveTo(dir*w*1.15, base, dir*w, top + h*0.14);
+    ox.lineTo(dir*w, top + h*0.01);
+    ox.stroke();
+    // prong tip
+    ox.beginPath();
+    ox.moveTo(dir*w, top - h*0.02);
+    ox.quadraticCurveTo(dir*(w + w*0.14), top + h*0.05, dir*w, top + h*0.08);
+    ox.stroke();
+  }
+  // crossbar joining the prong bases
+  ox.beginPath(); ox.moveTo(-w, base); ox.lineTo(w, base); ox.stroke();
+  // damaru knot on the lower shaft
+  ox.beginPath(); ox.arc(0, h*0.18, h*0.045, 0, Math.PI*2); ox.stroke();
+  ox.restore();
 }
 
 orb.addEventListener("click", toggleMic);
@@ -1536,12 +1734,18 @@ function drawGauge(){
 /* ════════════════════════════════════════════════════════════════
    MAIN LOOP — 30 fps, pause on hidden tab
    ════════════════════════════════════════════════════════════════ */
-const FRAME_MS = 1000 / 30;
 let _lastFrame = 0, _dialFrame = 0;
+function frameInterval(){
+  // Full 30fps only when something is happening; idle coasts at 12fps to
+  // keep the laptop cool. Mic/listening/thinking/speaking = active.
+  const active = STATE.micActive || (STATE.mode && STATE.mode !== "idle")
+                 || STATE.pulse > 0.02;
+  return active ? (1000/30) : (1000/12);
+}
 function loop(ts){
   if (document.hidden){ setTimeout(()=>requestAnimationFrame(loop), 500); return; }
   if (!_lastFrame) _lastFrame = ts;
-  if (ts - _lastFrame >= FRAME_MS){
+  if (ts - _lastFrame >= frameInterval()){
     _lastFrame = ts;
     drawOrb(); drawWave();
     if (++_dialFrame >= 6){ _dialFrame = 0; drawDial(); drawGauge(); }
@@ -1553,7 +1757,7 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden){ _lastFrame = 0; _dialFrame = 0; }
 });
 
-setTimeout(()=>addLine("TOMMY online. Awaiting orders, Sir.","tommy"), 1600);
+setTimeout(()=>addLine("KALKI online. Awaiting orders, Sir.","kalki"), 1600);
 </script>
 </body>
 </html>

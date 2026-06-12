@@ -1,5 +1,5 @@
 """
-TOMMY YouTube / video downloader via yt-dlp.
+KALKI YouTube / video downloader via yt-dlp.
 """
 
 import os

@@ -1,5 +1,5 @@
 """
-TOMMY Spotify control via Spotify Web API.
+KALKI Spotify control via Spotify Web API.
 First-time setup runs setup_spotify.py to authorize.
 """
 
@@ -118,43 +118,90 @@ def _try_launch_spotify():
 
 
 # ─── Playback ──────────────────────────────────────────
+import time as _time
+
+_last_query = None   # remembered so "retry" / "play it again" works
+
+
+def _wait_for_device(sp, timeout=14):
+    """Poll until Spotify registers a playback device (after a cold launch)."""
+    end = _time.time() + timeout
+    while _time.time() < end:
+        try:
+            items = sp.devices().get("devices", [])
+        except Exception:
+            items = []
+        if items:
+            active = next((d for d in items if d.get("is_active")), None)
+            return (active or items[0])["id"]
+        _time.sleep(1.3)
+    return None
+
+
 def play(query=None):
-    """Resume playback, or search for query and play first result."""
+    """Search + play. Launches Spotify and WAITS for a device if none is
+    active, then transfers playback and plays — so a cold start just works."""
+    global _last_query
+    if query:
+        _last_query = query
+    q = query or _last_query
+
     sp = _client()
     device_id = _ensure_active_device(sp)
+    launched = False
     if not device_id:
-        launched = _try_launch_spotify()
-        if launched:
-            return ("No active Spotify device, Sir. I've opened Spotify — "
-                    "give it a few seconds, then try again.")
-        return "No Spotify device available. Please open Spotify."
+        _try_launch_spotify()
+        launched = True
+        device_id = _wait_for_device(sp, timeout=14)
+    if not device_id:
+        return ("I opened Spotify but no device came online, Sir. Open the "
+                "Spotify app once and sign in, then say play again.")
+
+    # Make sure our target is the active device.
+    try:
+        sp.transfer_playback(device_id, force_play=False)
+    except Exception:
+        pass
+    if launched:
+        _time.sleep(1.5)   # let the fresh app settle before commanding it
 
     def _run():
-        if not query:
+        if not q:
             sp.start_playback(device_id=device_id)
             return "Resuming, Sir."
-        r = sp.search(q=query, type="track,playlist,album", limit=5)
+        r = sp.search(q=q, type="track,playlist,album", limit=5)
         tracks = r.get("tracks", {}).get("items", [])
         plists = r.get("playlists", {}).get("items", [])
         if tracks:
-            t = tracks[0]
-            sp.start_playback(device_id=device_id, uris=[t["uri"]])
-            return f"Playing {t['name']} by {t['artists'][0]['name']}."
+            tr = tracks[0]
+            sp.start_playback(device_id=device_id, uris=[tr["uri"]])
+            return f"Playing {tr['name']} by {tr['artists'][0]['name']}."
         if plists:
             p = plists[0]
             sp.start_playback(device_id=device_id, context_uri=p["uri"])
             return f"Playing playlist {p['name']}."
-        return f"No results for {query}, Sir."
+        return f"No results for {q}, Sir."
 
-    try:
-        return _run()
-    except Exception as e:
-        msg = str(e)
-        if "NO_ACTIVE_DEVICE" in msg or "404" in msg:
-            _try_launch_spotify()
-            return ("Spotify wasn't ready, Sir. I've launched it — "
-                    "please retry in a moment.")
-        return f"Spotify error: {msg}"
+    # Try; on NO_ACTIVE_DEVICE force-activate the device and retry once.
+    for attempt in (1, 2):
+        try:
+            return _run()
+        except Exception as e:
+            msg = str(e)
+            if attempt == 1 and ("NO_ACTIVE_DEVICE" in msg or "404" in msg
+                                 or "Device not found" in msg.lower()):
+                try:
+                    sp.transfer_playback(device_id, force_play=True)
+                except Exception:
+                    pass
+                _time.sleep(2.0)
+                continue
+            return f"Spotify error: {msg}"
+
+
+def retry():
+    """Re-run the last play request (for 'retry' / 'try again')."""
+    return play(_last_query)
 
 
 def pause():

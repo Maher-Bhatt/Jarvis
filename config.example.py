@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────
-# TOMMY — Configuration Template
+# KALKI — Configuration Template
 # Copy this file to config.py and fill in your own keys / settings.
 # config.py is gitignored so your secrets never get committed.
 # ──────────────────────────────────────────────────────────────
@@ -10,19 +10,20 @@ GROQ_API_KEY = "PASTE_YOUR_GROQ_KEY_HERE"
 
 # ── OWNER ───────────────────────────────────────────────────
 OWNER_NAME    = "YourName"
-OWNER_TITLE   = "Sir"          # or whatever TOMMY should call you
+OWNER_TITLE   = "Sir"          # or whatever KALKI should call you
 OWNER_CITY    = "YourCity"
 OWNER_STATE   = "YourState"
 OWNER_COUNTRY = "YourCountry"
 
 # ── VOICE (edge-tts) ────────────────────────────────────────
-# American males (Tommy vibe): en-US-GuyNeural (warm, default), en-US-DavisNeural
-#   (conversational), en-US-TonyNeural (deep), en-US-BrianNeural (professional)
-# British males: en-GB-RyanNeural (deep), en-GB-ThomasNeural (sharp)
-# Australian: en-AU-WilliamNeural
-TTS_VOICE  = "en-US-GuyNeural"
+# Most human / least robotic: en-US-BrianMultilingualNeural (default),
+#   en-US-AndrewMultilingualNeural — newest neural models, very natural.
+# British butler (JARVIS vibe): en-GB-RyanNeural, en-GB-ThomasNeural
+# Other US males: en-US-GuyNeural, en-US-TonyNeural (deep)
+TTS_VOICE  = "en-US-BrianMultilingualNeural"
 TTS_RATE   = "+0%"                # +N% faster, -N% slower
-TTS_VOLUME = "+10%"
+TTS_PITCH  = "+0Hz"               # +/-N Hz to shift pitch
+TTS_VOLUME = "+0%"
 
 # ── SERVER ──────────────────────────────────────────────────
 PORT    = 8888
@@ -34,7 +35,15 @@ OLLAMA_URL  = "http://localhost:11434"     # used only if Groq fails
 MAX_HISTORY = 20
 
 # ── WAKE WORDS ──────────────────────────────────────────────
-WAKE_WORDS = ["hey tommy", "tommy", "hey sir", "ok tommy"]
+WAKE_WORDS = ["hey kalki", "kalki", "hey sir", "ok kalki"]
+
+# ── MIC / STT INPUT ─────────────────────────────────────────
+# Keep Bluetooth headphones in high-quality A2DP: the listener avoids the
+# BT mic (which forces muffled HFP mode) and uses the built-in mic instead.
+STT_AVOID_BLUETOOTH = True
+STT_INPUT_DEVICE    = ""   # name substring to force a device, else auto
+STT_ENGINE          = "auto"          # auto | vosk (offline) | google (cloud)
+VOSK_MODEL_PATH     = "data/vosk-model"
 
 # ── STARTUP ─────────────────────────────────────────────────
 AUTO_START           = True

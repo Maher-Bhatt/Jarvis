@@ -1,5 +1,5 @@
 """
-TOMMY Tasks & Reminders
+KALKI Tasks & Reminders
 Tasks: persistent TODO list. Reminders: time-bound; fired by background thread.
 """
 

@@ -1,5 +1,5 @@
 """
-TOMMY Vision — screenshot + multimodal analysis.
+KALKI Vision — screenshot + multimodal analysis.
 Uses Groq vision models. Falls back to local OCR (pytesseract) if available.
 """
 
@@ -31,8 +31,6 @@ except Exception:
 VISION_MODELS = [
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "llama-3.2-90b-vision-preview",
-    "llama-3.2-11b-vision-preview",
 ]
 
 
@@ -68,7 +66,7 @@ def screenshot_save(path=None):
     if not path:
         desk = os.path.join(os.path.expanduser("~"), "Desktop")
         path = os.path.join(desk,
-            f"tommy_screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+            f"kalki_screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
     img.save(path)
     return path
 
@@ -88,7 +86,7 @@ def ocr_screen():
 
 
 SYSTEM_VISION = (
-    "You are TOMMY — Sir's personal AI. Look at the screenshot Sir just took. "
+    "You are KALKI — Sir's personal AI. Look at the screenshot Sir just took. "
     "Identify what is on screen and answer his question precisely. "
     "If it is a CTF/cyber challenge, solve it. "
     "If it is code, debug or explain it. "

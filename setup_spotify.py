@@ -1,6 +1,6 @@
 """
 One-time Spotify OAuth setup.
-Run: py -3.11 C:\\Tommy\\setup_spotify.py
+Run: py -3.11 C:\\Kalki\\setup_spotify.py
 """
 
 import os
@@ -18,7 +18,7 @@ os.makedirs(os.path.dirname(spotify_mod.CACHE_PATH), exist_ok=True)
 
 def main():
     print("=" * 64)
-    print(" TOMMY - Spotify OAuth Setup")
+    print(" KALKI - Spotify OAuth Setup")
     print("=" * 64)
 
     if not getattr(config, "SPOTIFY_CLIENT_ID", "") or \
@@ -27,10 +27,10 @@ def main():
         print("\n  ONE-TIME SETUP STEPS:")
         print("  1. Go to https://developer.spotify.com/dashboard")
         print("  2. Log in with your Spotify account")
-        print("  3. Create app -> name: TOMMY, description anything")
+        print("  3. Create app -> name: KALKI, description anything")
         print("  4. Set Redirect URI: http://127.0.0.1:8889/callback")
         print("  5. Copy Client ID and Client Secret")
-        print("  6. Add to C:\\Tommy\\config.py:")
+        print("  6. Add to C:\\Kalki\\config.py:")
         print("     SPOTIFY_CLIENT_ID     = 'paste_id_here'")
         print("     SPOTIFY_CLIENT_SECRET = 'paste_secret_here'")
         print("     SPOTIFY_REDIRECT_URI  = 'http://127.0.0.1:8889/callback'")
@@ -50,7 +50,7 @@ def main():
         sys.exit(1)
 
     print("\n" + "=" * 64)
-    print("  Spotify linked. Try: 'Hey TOMMY play lo-fi'")
+    print("  Spotify linked. Try: 'Hey KALKI play lo-fi'")
     print("=" * 64)
 
 

@@ -1,5 +1,5 @@
 """
-TOMMY Notes & Journal — quick capture, tagged, full-text search.
+KALKI Notes & Journal — quick capture, tagged, full-text search.
 """
 
 import os

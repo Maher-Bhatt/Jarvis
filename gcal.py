@@ -1,5 +1,5 @@
 """
-TOMMY Google Calendar integration.
+KALKI Google Calendar integration.
 Uses OAuth — first-time setup runs setup_google.py to authorize.
 """
 
@@ -258,7 +258,7 @@ def short_greeting_line():
 
 
 def startup_summary():
-    """Spoken at TOMMY startup: today's events + tomorrow's events + important mail."""
+    """Spoken at KALKI startup: today's events + tomorrow's events + important mail."""
     if not is_configured():
         return ""
 

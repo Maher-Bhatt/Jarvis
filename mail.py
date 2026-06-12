@@ -1,5 +1,5 @@
 """
-TOMMY Mail — IMAP inbox scan.
+KALKI Mail — IMAP inbox scan.
 Requires EMAIL_ADDRESS + EMAIL_APP_PASSWORD set in config.py.
 For Gmail, generate an App Password at https://myaccount.google.com/apppasswords
 """

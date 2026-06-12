@@ -1,5 +1,5 @@
 """
-TOMMY Vault — DPAPI-encrypted local password store.
+KALKI Vault — DPAPI-encrypted local password store.
 Per-Windows-user, machine-locked. No master password.
 Falls back to base64 (clearly marked) if pywin32 is missing.
 """
@@ -23,7 +23,7 @@ def _enc(plain):
         return ""
     data = plain.encode("utf-8") if isinstance(plain, str) else plain
     if HAS_DPAPI:
-        blob = win32crypt.CryptProtectData(data, "tommy-vault", None, None, None, 0)
+        blob = win32crypt.CryptProtectData(data, "kalki-vault", None, None, None, 0)
         return "DPAPI:" + base64.b64encode(blob).decode()
     return "B64:" + base64.b64encode(data).decode()
 

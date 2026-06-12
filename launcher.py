@@ -1,5 +1,5 @@
 """
-TOMMY v5 — Silent Launcher
+KALKI v5 — Silent Launcher
 - Registers Windows auto-start (HKCU Run + Startup folder shortcut).
 - Spawns server.py + listener.py with no console windows.
 - Respawns either child if it dies.
@@ -68,10 +68,10 @@ def register_registry(enabled=True):
             r"Software\Microsoft\Windows\CurrentVersion\Run",
             0, winreg.KEY_SET_VALUE)
         if enabled:
-            winreg.SetValueEx(key, "TOMMY_v5", 0, winreg.REG_SZ, cmd)
+            winreg.SetValueEx(key, "KALKI_v5", 0, winreg.REG_SZ, cmd)
             log(f"registry autostart set: {cmd}")
         else:
-            try: winreg.DeleteValue(key, "TOMMY_v5")
+            try: winreg.DeleteValue(key, "KALKI_v5")
             except FileNotFoundError: pass
             log("registry autostart removed")
         winreg.CloseKey(key)
@@ -87,7 +87,7 @@ def register_startup_folder(enabled=True):
         os.environ.get("APPDATA", ""),
         r"Microsoft\Windows\Start Menu\Programs\Startup",
     )
-    bat = os.path.join(startup, "TOMMY_v5.bat")
+    bat = os.path.join(startup, "KALKI_v5.bat")
     pyw = find_pythonw()
     launcher = os.path.abspath(__file__)
     try:
@@ -110,8 +110,32 @@ def register_startup_folder(enabled=True):
         return False
 
 
+def acquire_single_instance():
+    """Return a held handle if we are the only launcher, else None.
+
+    Uses a Windows named mutex so repeated logins / double autostart entries
+    (HKCU Run + Startup .bat) can never stack multiple KALKI stacks again.
+    """
+    try:
+        import win32event
+        import win32api
+        import winerror
+        handle = win32event.CreateMutex(None, False, "Global\\KALKI_v5_launcher")
+        if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
+            return None
+        return handle
+    except Exception as e:
+        log(f"single-instance check skipped ({e})")
+        return True  # don't block startup if pywin32 is unavailable
+
+
 def main():
     log("launcher start")
+
+    _lock = acquire_single_instance()
+    if _lock is None:
+        log("another launcher already running — exiting to avoid duplicate stack")
+        return
 
     if config.AUTO_START:
         register_registry(True)

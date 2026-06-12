@@ -12,12 +12,16 @@ data/history.json
 data/tasks.json
 data/reminders.json
 data/notes.json
+data/watchlist.json
+data/vosk-model/
 data/wordlist.txt
 data/rockyou.txt
 data/scripts/
+data/vosk-model/
+data/scans/
 
 # ── Logs ──
-data/tommy.log
+data/kalki.log
 data/listener.log
 data/launcher.log
 *.log

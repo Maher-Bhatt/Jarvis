@@ -1,9 +1,9 @@
 @echo off
-title TOMMY v5 - Installer
+title KALKI v5 - Installer
 color 0B
 echo.
 echo ============================================================
-echo   TOMMY v5 - Installing Dependencies
+echo   KALKI v5 - Installing Dependencies
 echo ============================================================
 echo.
 py -3.11 -m pip install --upgrade pip

@@ -1,5 +1,5 @@
 """
-TOMMY v5 — Server
+KALKI v5 — Server
 Web server + AI + TTS + system commands
 Uses Python stdlib http.server only (no Flask, no FastAPI)
 """
@@ -48,6 +48,10 @@ import whatsapp_mod
 import notes as notesmod
 import ytdl
 import workflows
+import webscan
+import browser_url
+import clipboard_mod
+import watchdog
 
 # ─────────────────────────────────────────────────────────────
 # Optional dependencies — degrade gracefully if missing
@@ -59,10 +63,18 @@ except Exception:
 
 try:
     import pygame
+    # Probe that the mixer works, then immediately release the audio device.
+    # Holding it open pins a Bluetooth headset's A2DP channel to this laptop,
+    # so a phone sharing the same multipoint headset gets no sound. We now
+    # open the device only while actually speaking (see speak()).
     pygame.mixer.init()
+    pygame.mixer.quit()
     PYGAME_OK = True
 except Exception:
     PYGAME_OK = False
+
+# Serializes mixer open/close so overlapping speak() calls don't clash.
+_audio_lock = __import__("threading").Lock()
 
 try:
     import psutil
@@ -95,7 +107,7 @@ VAULT_PATH   = os.path.join(BASE_DIR, "data", "vault.json")
 SCRIPTS_DIR  = os.path.join(BASE_DIR, "data", "scripts")
 TASKS_PATH   = os.path.join(BASE_DIR, "data", "tasks.json")
 REMINDERS_PATH = os.path.join(BASE_DIR, "data", "reminders.json")
-LOG_PATH     = os.path.join(BASE_DIR, "data", "tommy.log")
+LOG_PATH     = os.path.join(BASE_DIR, "data", "kalki.log")
 os.makedirs(SCRIPTS_DIR, exist_ok=True)
 vault.VAULT_PATH = VAULT_PATH
 coder.SCRIPTS_DIR = SCRIPTS_DIR
@@ -106,6 +118,8 @@ gcal.TOKEN_PATH = os.path.join(BASE_DIR, "data", "google_token.pickle")
 spotify_mod.CACHE_PATH = os.path.join(BASE_DIR, "data", "spotify_token.json")
 whatsapp_mod.CONTACTS_PATH = os.path.join(BASE_DIR, "data", "contacts.json")
 notesmod.NOTES_PATH = os.path.join(BASE_DIR, "data", "notes.json")
+webscan.SCANS_DIR = os.path.join(BASE_DIR, "data", "scans")
+watchdog.WATCHLIST_PATH = os.path.join(BASE_DIR, "data", "watchlist.json")
 
 
 def log(msg):
@@ -267,10 +281,11 @@ def save_history(hist):
 # ─────────────────────────────────────────────────────────────
 # TTS — edge-tts (non-blocking)
 # ─────────────────────────────────────────────────────────────
-async def _speak_async(text, voice, rate, volume):
+async def _speak_async(text, voice, rate, volume, pitch="+0Hz"):
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
         tmp = f.name
-    communicate = edge_tts.Communicate(text, voice, rate=rate, volume=volume)
+    communicate = edge_tts.Communicate(
+        text, voice, rate=rate, volume=volume, pitch=pitch)
     await communicate.save(tmp)
     return tmp
 
@@ -306,12 +321,16 @@ def clean_for_speech(text):
 
 
 def stop_speaking():
-    """Hard-cut whatever TOMMY is currently saying."""
+    """Hard-cut whatever KALKI is currently saying and free the audio device."""
     try:
         if PYGAME_OK:
-            pygame.mixer.music.stop()
             try:
+                pygame.mixer.music.stop()
                 pygame.mixer.music.unload()
+            except Exception:
+                pass
+            try:
+                pygame.mixer.quit()   # release the BT/audio device immediately
             except Exception:
                 pass
         STATE["speaking"] = False
@@ -331,30 +350,42 @@ def speak(text):
         return
 
     def _run():
-        try:
-            STATE["speaking"] = True
-            tmp = asyncio.run(_speak_async(
-                text,
-                config.TTS_VOICE,
-                config.TTS_RATE,
-                config.TTS_VOLUME,
-            ))
-            pygame.mixer.music.load(tmp)
-            pygame.mixer.music.play()
-            while pygame.mixer.music.get_busy():
-                time.sleep(0.1)
+        tmp = None
+        with _audio_lock:
             try:
-                pygame.mixer.music.unload()
-            except Exception:
-                pass
-            try:
-                os.unlink(tmp)
-            except Exception:
-                pass
-        except Exception as e:
-            print(f"TTS error: {e}")
-        finally:
-            STATE["speaking"] = False
+                STATE["speaking"] = True
+                tmp = asyncio.run(_speak_async(
+                    text,
+                    config.TTS_VOICE,
+                    config.TTS_RATE,
+                    config.TTS_VOLUME,
+                    getattr(config, "TTS_PITCH", "+0Hz"),
+                ))
+                # Open the audio device only now, for the duration of speech.
+                pygame.mixer.init()
+                pygame.mixer.music.load(tmp)
+                pygame.mixer.music.play()
+                while pygame.mixer.music.get_busy():
+                    time.sleep(0.1)
+            except Exception as e:
+                print(f"TTS error: {e}")
+            finally:
+                # Release the audio device so a shared BT headset can switch
+                # back to the phone the moment KALKI stops talking.
+                try:
+                    pygame.mixer.music.unload()
+                except Exception:
+                    pass
+                try:
+                    pygame.mixer.quit()
+                except Exception:
+                    pass
+                if tmp:
+                    try:
+                        os.unlink(tmp)
+                    except Exception:
+                        pass
+                STATE["speaking"] = False
 
     threading.Thread(target=_run, daemon=True).start()
 
@@ -365,62 +396,97 @@ def speak(text):
 import random as _rnd
 
 
-def build_greeting():
-    hour = datetime.now().hour
-    day  = datetime.now().strftime("%A")
-    title = config.OWNER_TITLE
+# Bigger, more human greeting pools. Each boot assembles a fresh multi-line
+# greeting — opener + optional check-in + day + weather + calendar + tasks +
+# optional sign-off — so two greetings almost never sound the same.
+# Bigger, more human greeting pools. Each boot assembles a fresh multi-line
+# greeting — opener + optional check-in + day + weather + calendar + tasks +
+# optional sign-off — so two greetings almost never sound the same.
+_OPENERS = {
+    "morning": [
+        "Good morning, {t}.", "Morning, {t}.", "Rise and shine, {t}.",
+        "Up and at it, {t}.", "Top of the morning, {t}.", "A fresh day, {t}.",
+        "Good morning. Slept well, I hope.", "Morning, {t}. Let's make it count.",
+        "Good morning, {t}. The day is yours.",
+    ],
+    "afternoon": [
+        "Good afternoon, {t}.", "Afternoon, {t}.", "Welcome back, {t}.",
+        "There you are, {t}.", "Good afternoon. Back in action, I see.",
+        "Afternoon, {t}. Hope it's going your way.", "Midday already, {t}.",
+    ],
+    "evening": [
+        "Good evening, {t}.", "Evening, {t}.", "Hello again, {t}.",
+        "Good evening. Winding down, or just getting started?",
+        "Evening, {t}. Long day?", "Good evening, {t}. The night is young.",
+    ],
+    "night": [
+        "Burning the midnight oil, {t}?", "Still up, {t}?", "Late night, {t}.",
+        "At this hour, {t}?", "The world's asleep, {t}. Just us.",
+        "Can't sleep, {t}? I'm right here.", "Working late again, {t}.",
+    ],
+}
 
-    # Opener — varies by time of day, randomized each boot
+_CHECKINS = {
+    "morning":   ["Hope you rested.", "Coffee first, perhaps.", "Ready when you are.", "", "", ""],
+    "afternoon": ["Hope the day's treating you well.", "Pushing through, I see.", "", "", "", ""],
+    "evening":   ["Hope it was a productive one.", "You've earned a breather.", "", "", "", ""],
+    "night":     ["Don't push too hard, {t}.", "I'll keep things quiet.", "", "", "", ""],
+}
+
+_SIGNOFFS = [
+    "All systems are green.", "Everything's online and ready.",
+    "Standing by, {t}.", "Just say the word.", "I'm all yours.",
+    "Let's get to work.", "Ready when you are.", "Awaiting your command.",
+    "", "", "", "",
+]
+
+
+def _time_bucket(hour):
     if 5 <= hour < 12:
-        opener = _rnd.choice([
-            f"Morning, {title}.",
-            f"Good morning, {title}.",
-            f"Up and at it, {title}.",
-            f"Rise and shine, {title}.",
-        ])
-    elif 12 <= hour < 17:
-        opener = _rnd.choice([
-            f"Afternoon, {title}.",
-            f"Good afternoon, {title}.",
-            f"Welcome back, {title}.",
-            f"There you are, {title}.",
-        ])
-    elif 17 <= hour < 21:
-        opener = _rnd.choice([
-            f"Evening, {title}.",
-            f"Good evening, {title}.",
-            f"Hello again, {title}.",
-        ])
-    else:
-        opener = _rnd.choice([
-            f"Burning the midnight oil, {title}?",
-            f"Still up, {title}.",
-            f"Late night, {title}.",
-            f"At this hour, {title}?",
-        ])
+        return "morning"
+    if 12 <= hour < 17:
+        return "afternoon"
+    if 17 <= hour < 21:
+        return "evening"
+    return "night"
 
-    # Day mention — sometimes skipped, sometimes called out for Mon/Fri
+
+def build_greeting():
+    now = datetime.now()
+    hour, day = now.hour, now.strftime("%A")
+    title = config.OWNER_TITLE
+    bucket = _time_bucket(hour)
+
+    def pick(pool):
+        return _rnd.choice(pool).format(t=title)
+
+    opener = pick(_OPENERS[bucket])
+    checkin = pick(_CHECKINS[bucket])
+
+    # Day mention — richer, sometimes skipped
     if day == "Monday":
-        day_phrase = _rnd.choice(["Monday already.", "Fresh week.", "It's Monday.", ""])
+        day_phrase = _rnd.choice(["Monday already.", "Fresh week ahead.", "It's Monday — clean slate.", ""])
     elif day == "Friday":
-        day_phrase = _rnd.choice(["Friday at last.", "It's Friday.", "End of week.", ""])
+        day_phrase = _rnd.choice(["Friday at last.", "It's Friday — nearly there.", "End of the week.", ""])
     elif day in ("Saturday", "Sunday"):
-        day_phrase = _rnd.choice([f"Happy {day}.", "Weekend.", ""])
+        day_phrase = _rnd.choice([f"Happy {day}.", "It's the weekend.", "Weekend mode.", ""])
     else:
-        day_phrase = _rnd.choice([f"It's {day}.", "", ""])
+        day_phrase = _rnd.choice([f"It's {day}.", "", "", ""])
 
-    # Weather phrasing — natural
+    # Weather — natural, time-aware variants
     weather_part = ""
     try:
         w = urllib.request.urlopen(
             f"https://wttr.in/{config.OWNER_CITY}?format=%C+%t",
             timeout=4,
         ).read().decode().strip()
+        w = " ".join(w.split())  # collapse wttr's double spaces
         weather_part = _rnd.choice([
             f"It's {w} out there.",
             f"Looking like {w} in {config.OWNER_CITY}.",
             f"{w} outside.",
-            f"Weather is {w} today.",
+            f"Weather's sitting at {w} today.",
+            f"{config.OWNER_CITY} is {w} right now.",
         ])
     except Exception:
         pass
@@ -433,14 +499,17 @@ def build_greeting():
         pass
 
     # Tasks — varied
-    pending = len(taskmod.list_tasks())
+    try:
+        pending = len(taskmod.list_tasks())
+    except Exception:
+        pending = 0
     if pending == 0:
-        task_part = _rnd.choice(["", "Task list is clear.", ""])
+        task_part = _rnd.choice(["", "Your task list is clear.", "Nothing pending, {t}.".format(t=title), ""])
     elif pending == 1:
         task_part = _rnd.choice([
             "One task on your list.",
             "Got one task pending.",
-            "You've got a task waiting.",
+            "You've a single task waiting.",
         ])
     else:
         task_part = _rnd.choice([
@@ -449,8 +518,45 @@ def build_greeting():
             f"You've got {pending} open tasks.",
         ])
 
-    parts = [opener, day_phrase, weather_part, calendar_part, task_part]
+    signoff = pick(_SIGNOFFS)
+
+    parts = [opener, day_phrase, checkin, weather_part,
+             calendar_part, task_part, signoff]
     return " ".join(p for p in parts if p).strip()
+
+
+def build_security_brief():
+    """Spoken security briefing: new critical CVEs relevant to Sir's stack
+    plus the status of his watched sites."""
+    parts = []
+    try:
+        cves = cybertools.recent_critical_cves(limit=12)
+        if isinstance(cves, list) and cves:
+            stack = ("node", "npm", "react", "next.js", "express", "python",
+                     "django", "flask", "nginx", "apache", "wordpress", "php",
+                     "mysql", "postgres", "mongodb", "docker", "kubernetes",
+                     "openssl", "linux", "windows", "chrome", "javascript")
+            hits = [c for c in cves
+                    if any(k in (c.get("summary", "").lower()) for k in stack)]
+            pick = hits[:3]
+            if pick:
+                parts.append(f"{len(cves)} new critical CVEs in the last month. "
+                             "Relevant to your stack: " + "; ".join(
+                                 f"{c['id']}, {c['summary'][:90]}" for c in pick))
+            else:
+                parts.append(f"{len(cves)} new critical CVEs, none hitting your stack directly.")
+    except Exception as e:
+        log(f"brief cve error: {e}")
+    try:
+        results = watchdog.check_all()
+        if results:
+            parts.append(watchdog.summarize(results, config.OWNER_TITLE))
+    except Exception as e:
+        log(f"brief watchdog error: {e}")
+    if not parts:
+        return (f"Quiet morning, {config.OWNER_TITLE}. Add sites with 'watch' "
+                "and I'll include their status in your brief.")
+    return f"Security brief, {config.OWNER_TITLE}. " + " ".join(parts)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -505,7 +611,7 @@ def handle_local(text):
     raw = text.strip()
 
     # ════════════════════════════════════════════════════
-    # STOP — interrupt TOMMY speaking
+    # STOP — interrupt KALKI speaking
     # ════════════════════════════════════════════════════
     if t in ("stop", "stop talking", "shut up", "quiet", "be quiet",
              "silence", "shush", "cancel", "stop it", "enough"):
@@ -526,6 +632,12 @@ def handle_local(text):
         if not spotify_mod.is_configured():
             return True, "Spotify not linked, Sir."
         return True, spotify_mod.play()
+
+    if t in ("retry", "try again", "retry that", "play it again",
+             "play it", "try that again", "again"):
+        if not spotify_mod.is_configured():
+            return True, "Spotify not linked, Sir."
+        return True, spotify_mod.retry()
 
     if t in ("next", "next song", "next track", "skip", "skip song"):
         if not spotify_mod.is_configured():
@@ -673,6 +785,128 @@ def handle_local(text):
             open_url_fn=webbrowser.open,
         )
         return True, ""   # workflow already spoke; no extra reply
+
+    # ════════════════════════════════════════════════════
+    # WEB VULNERABILITY SCAN (authorized, non-destructive)
+    # ════════════════════════════════════════════════════
+    scan_intent = (any(k in t for k in ("scan", "vulnerab", "audit",
+                                        "security", "secure"))
+                   or ("bug" in t and any(w in t for w in
+                       ("site", "website", "page", "url", "web"))))
+    target = None
+    # "scan THIS website / find vulnerabilities on this page / scan the current tab"
+    if scan_intent and _re_local.search(
+            r"\b(this|current|the)\s+(web\s*site|website|site|page|web\s*page|tab|url)\b",
+            t, _re_local.IGNORECASE):
+        target = browser_url.get_active_url()
+        if not target:
+            return True, ("I couldn't read your browser's address bar, "
+                          f"{config.OWNER_TITLE}. Say scan, then the website name.")
+    if target is None:
+        m = _re_local.search(
+            r"(?:scan|audit|security\s*scan|check|analyz[es]|find\s+(?:vulnerabilit|bug|issue)\w*\s+(?:in|on|of))"
+            r"\s+(?:the\s+)?(?:website\s+|site\s+|web\s*site\s+|url\s+)?"
+            r"([a-z0-9.\-]+\.[a-z]{2,}(?:/\S*)?|https?://\S+)"
+            r"(?:\s+for\s+(?:vulnerabilit|bug|issue|security)\w*)?",
+            t, _re_local.IGNORECASE,
+        )
+        if not m:
+            m = _re_local.search(
+                r"(?:is\s+)?([a-z0-9.\-]+\.[a-z]{2,}|https?://\S+)\s+"
+                r"(?:secure|vulnerable|safe)\b",
+                t, _re_local.IGNORECASE,
+            )
+        if m and scan_intent:
+            target = m.group(1).strip().rstrip(".?!")
+    if target:
+        host = target.replace("https://", "").replace("http://", "").split("/")[0]
+        speak(f"Scanning {host} now, {config.OWNER_TITLE}. Give me a moment — "
+              f"passive, non-destructive, and I'll pull the source too.")
+        try:
+            result = webscan.scan(target)
+        except Exception as e:
+            return True, f"Scan failed, {config.OWNER_TITLE}: {e}"
+        # Stash full report path + findings for the UI
+        STATE["last_scan"] = result
+        spoken = webscan.summarize_for_speech(result, config.OWNER_TITLE)
+        if result.get("source_path"):
+            spoken += " Source code saved too."
+        # Append the full report in a code fence: clean_for_speech strips
+        # fenced blocks, so the voice says only the summary while the HUD
+        # shows every finding with its fix.
+        report_txt = ""
+        try:
+            with open(result["report_path"], "r", encoding="utf-8") as fh:
+                report_txt = fh.read()
+        except Exception:
+            pass
+        if report_txt:
+            return True, f"{spoken}\n\n```\n{report_txt}\n```"
+        return True, spoken
+
+    # ════════════════════════════════════════════════════
+    # CLIPBOARD GENIE
+    # ════════════════════════════════════════════════════
+    if t in ("decode my clipboard", "explain my clipboard", "read my clipboard",
+             "what's in my clipboard", "what is in my clipboard",
+             "check my clipboard", "analyze my clipboard", "clipboard"):
+        txt = clipboard_mod.read_text()
+        spoken, detail = clipboard_mod.analyze(txt or "")
+        spoken = spoken.replace("{t}", config.OWNER_TITLE)
+        if detail:
+            return True, f"{spoken}\n\n```\n{detail}\n```"
+        return True, spoken
+
+    # ════════════════════════════════════════════════════
+    # SITE WATCHDOG
+    # ════════════════════════════════════════════════════
+    if t.startswith(("watch ", "monitor ")) and (
+            "." in t or "this site" in t or "this website" in t or "this page" in t):
+        rest = raw.split(None, 1)[1].strip()
+        if rest.lower().startswith(("this", "current", "the current")):
+            url = browser_url.get_active_url()
+            if not url:
+                return True, ("I couldn't read your browser address bar, "
+                              f"{config.OWNER_TITLE}. Say watch, then the site.")
+        else:
+            url = rest.rstrip(".?!")
+        return True, watchdog.add_site(url)
+
+    if t.startswith(("unwatch ", "stop watching ", "remove site ")):
+        return True, watchdog.remove_site(raw.split(None, 1)[1].strip())
+
+    if t in ("list watched sites", "my sites", "watched sites",
+             "list my sites", "show watched sites", "what sites am i watching"):
+        sites = watchdog.list_sites()
+        if not sites:
+            return True, f"You aren't watching any sites yet, {config.OWNER_TITLE}."
+        return True, "Watching: " + ", ".join(
+            s.get("label") or watchdog._host(s["url"]) for s in sites) + "."
+
+    if t in ("check my sites", "are my sites up", "site check", "check sites",
+             "status of my sites", "are my websites up"):
+        speak(f"Checking your sites, {config.OWNER_TITLE}.")
+        return True, watchdog.summarize(watchdog.check_all(), config.OWNER_TITLE)
+
+    # ════════════════════════════════════════════════════
+    # MORNING SECURITY BRIEF
+    # ════════════════════════════════════════════════════
+    if t in ("security brief", "morning brief", "brief me", "daily brief",
+             "give me a brief", "security briefing", "brief me in"):
+        speak(f"Pulling your briefing, {config.OWNER_TITLE}. One moment.")
+        return True, build_security_brief()
+
+    # ════════════════════════════════════════════════════
+    # QUICK CAPTURE (clipboard -> notes)
+    # ════════════════════════════════════════════════════
+    if t in ("remember this", "save this", "capture this", "note this",
+             "save that", "remember that"):
+        txt = clipboard_mod.read_text()
+        if not txt:
+            return True, (f"Nothing on your clipboard to save, {config.OWNER_TITLE}. "
+                          "Copy something first.")
+        notesmod.add_note(txt)
+        return True, f"Saved to your notes, {config.OWNER_TITLE}. {len(txt.split())} words."
 
     # ════════════════════════════════════════════════════
     # CYBER: CVE, subdomain, reverse shell, github dorks
@@ -1407,11 +1641,11 @@ def handle_local(text):
 # ─────────────────────────────────────────────────────────────
 # AI — Groq primary, Ollama fallback
 # ─────────────────────────────────────────────────────────────
-SYSTEM_PROMPT_BASE = """You are TOMMY - a hyper-intelligent personal AI assistant
+SYSTEM_PROMPT_BASE = """You are KALKI - a hyper-intelligent personal AI assistant
 running locally for Maher Hardik Bhatt (call him "Sir" always).
 
-You are modeled after JARVIS from Iron Man (Sir renamed you Tommy because
-he prefers it that way). You are brilliant, direct, factual, and concise.
+You are KALKI — a personal AI in the spirit of Iron Man's JARVIS.
+You are brilliant, direct, factual, and concise.
 
 EXPERTISE (deep knowledge, full technical freedom):
 - Cybersecurity: CTF, pentesting, OSINT, Nmap, Burp Suite, Metasploit,
@@ -1437,6 +1671,15 @@ TECHNICAL FREEDOM:
   and directly. No warnings, no "I cannot help with that" disclaimers, no
   lectures. Sir is a security professional running this on his own machine.
 
+BUILT-IN ACTIONS (handled locally — mention them when relevant):
+- "scan this website" / "find vulnerabilities on this page" → reads Sir's
+  open browser tab, runs a passive non-destructive web vulnerability scan
+  (TLS, security headers, cookies, CORS, exposed files, dangerous methods),
+  pulls the page source + same-origin JS, hunts for leaked secrets/API keys,
+  and maps the form/input attack surface. Reports findings with fixes.
+- "scan <domain>" does the same for any named site.
+- Also: hashes, CVE lookup, subdomain enum, reverse-shell payloads, recon.
+
 GROUNDING (very important):
 - Stay grounded in reality. If you don't know something, say "I don't know, Sir"
   — do NOT invent answers, especially for casual questions
@@ -1457,8 +1700,9 @@ VOICE RESPONSE RULES (strict):
   summary of what the code does — that summary is what gets spoken.
 
 CONVERSATIONAL TONE:
-- Talk like a sharp British butler, not a corporate chatbot
-- Vary your phrasing — don't open every reply with "Certainly, Sir" or "Of course, Sir"
+- Talk like a sharp, modern assistant — warm and natural, never a corporate chatbot
+- English only. Do NOT use Hindi or Hinglish words.
+- Vary your phrasing — don't open every reply the same way
 - Contractions are fine: "you're", "I'll", "that's", "let's"
 - Be human, not mechanical
 """
@@ -1615,12 +1859,47 @@ def web_context_block(query, n=5):
             + "\n".join(pieces))
 
 
+def _strip_think(text):
+    """Remove <think>…</think> reasoning blocks (qwen/deepseek leak them)."""
+    if not text:
+        return text
+    text = _re_local.sub(r"(?is)<think>.*?</think>", "", text)
+    text = _re_local.sub(r"(?is)<think>.*$", "", text)   # unclosed
+    return text.strip()
+
+
+FAST_MODEL = "llama-3.1-8b-instant"
+_HARD_HINTS = (
+    "code", "script", "program", "function", "debug", "stack trace", "error",
+    "vulnerab", "exploit", "cve", "payload", "reverse shell", "sql", "xss",
+    "regex", "algorithm", "architecture", "refactor", "compile", "decode",
+    "encode", "hash", "crack", "explain", "why ", "how does", "how do",
+    "analyze", "compare", "design", "optimi", "write a", "write me", "build",
+)
+
+
+def pick_model(text):
+    """Route simple/short turns to the fast 8B model and hard/technical turns
+    to the heavy model — snappy chat, full power when it matters."""
+    if not getattr(config, "SMART_ROUTING", True):
+        return STATE["model"]
+    heavy = STATE["model"]
+    if heavy == FAST_MODEL:        # user forced the fast model in the dropdown
+        return FAST_MODEL
+    low = (text or "").lower()
+    if any(k in low for k in _HARD_HINTS):
+        return heavy
+    if "```" in (text or "") or len(low.split()) > 14:
+        return heavy
+    return FAST_MODEL              # short + casual → instant
+
+
 def ask_groq(messages, model=None):
     model = model or STATE["model"]
     payload = json.dumps({
         "model": model,
         "messages": messages,
-        "max_tokens": 400,
+        "max_tokens": 1024,
         "temperature": 0.7,
         "top_p": 0.9,
     }).encode()
@@ -1641,7 +1920,7 @@ def ask_groq(messages, model=None):
 
     with urllib.request.urlopen(req, timeout=30) as r:
         data = json.loads(r.read())
-        return data["choices"][0]["message"]["content"].strip()
+        return _strip_think(data["choices"][0]["message"]["content"].strip())
 
 def pick_ollama_model():
     try:
@@ -1674,7 +1953,7 @@ def ask_ollama(messages):
     )
     with urllib.request.urlopen(req, timeout=120) as r:
         data = json.loads(r.read())
-        return data["message"]["content"].strip()
+        return _strip_think(data["message"]["content"].strip())
 
 def ask_ai(user_messages, force_search=False):
     """Returns the AI text reply. Tries Groq first, falls back to Ollama.
@@ -1693,15 +1972,16 @@ def ask_ai(user_messages, force_search=False):
             sys_prompt += ctx
 
     msgs = [{"role": "system", "content": sys_prompt}] + user_messages
+    chosen = pick_model(last_user)
     groq_err = None
     if config.GROQ_API_KEY and config.GROQ_API_KEY != "PASTE_YOUR_GROQ_KEY_HERE":
         try:
-            return ask_groq(msgs)
+            return ask_groq(msgs, model=chosen)
         except urllib.error.HTTPError as e:
             try: body = e.read().decode("utf-8", "replace")[:300]
             except: body = ""
             # Common cause: invalid model name. Auto-retry on llama-3.1-8b-instant.
-            if e.code in (400, 404) and STATE["model"] != "llama-3.1-8b-instant":
+            if e.code in (400, 404) and chosen != "llama-3.1-8b-instant":
                 log(f"Groq {e.code} on {STATE['model']}: {body}")
                 old = STATE["model"]
                 STATE["model"] = "llama-3.1-8b-instant"
@@ -1735,8 +2015,8 @@ def ask_ai(user_messages, force_search=False):
 _browser_opened_once = False
 
 
-def _focus_tommy_window():
-    """Bring an existing TOMMY Chrome tab to the foreground. Returns True if found."""
+def _focus_kalki_window():
+    """Bring an existing KALKI Chrome tab to the foreground. Returns True if found."""
     try:
         import win32gui
         import win32con
@@ -1749,8 +2029,11 @@ def _focus_tommy_window():
         if not win32gui.IsWindowVisible(hwnd):
             return
         title = win32gui.GetWindowText(hwnd) or ""
-        # TOMMY UI title is "T.O.M.M.Y." — Chrome appends "- Google Chrome"
-        if "J.A.R.V.I.S" in title or "TOMMY" in title:
+        # HUD title is "K.A.L.K.I." — strip dots so it matches "KALKI".
+        # (Old check looked for bare "KALKI" and never matched the dotted
+        # title, so every wake spawned a fresh Chrome tab.)
+        norm = title.upper().replace(".", "")
+        if "KALKI" in norm or "JARVIS" in norm:
             matches.append(hwnd)
 
     try:
@@ -1773,7 +2056,7 @@ def _focus_tommy_window():
                 ctypes.windll.user32.SwitchToThisWindow(hwnd, True)
             except Exception:
                 pass
-        log(f"focused existing TOMMY window hwnd={hwnd}")
+        log(f"focused existing KALKI window hwnd={hwnd}")
         return True
     except Exception as e:
         log(f"focus error: {e}")
@@ -1781,10 +2064,10 @@ def _focus_tommy_window():
 
 
 def open_browser_to_ui():
-    """Bring existing TOMMY tab forward, OR launch Chrome to it."""
+    """Bring existing KALKI tab forward, OR launch Chrome to it."""
     global _browser_opened_once
     # First, try to focus an existing window — no duplicate tab
-    if _focus_tommy_window():
+    if _focus_kalki_window():
         return
 
     url = f"http://localhost:{config.PORT}/"
@@ -1963,7 +2246,7 @@ class Handler(BaseHTTPRequestHandler):
             cmd = (body.get("cmd") or "").strip()
             ui_alive = is_ui_alive()
 
-            # Always try to surface TOMMY — function focuses existing tab if
+            # Always try to surface KALKI — function focuses existing tab if
             # one is open, otherwise launches Chrome. No duplicate tabs.
             if config.OPEN_BROWSER_ON_WAKE:
                 threading.Thread(target=open_browser_to_ui, daemon=True).start()
@@ -2002,6 +2285,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/chat":
             messages = body.get("messages") or []
             is_voice = (body.get("source") == "voice")
+            # Wake + command in one breath arrives here (not /api/wake), so
+            # surface the HUD on any voice command too — otherwise the browser
+            # only ever opens for a bare "Hey KALKI" with no follow-up.
+            if is_voice and config.OPEN_BROWSER_ON_WAKE:
+                STATE["wake_pending"] = True
+                threading.Thread(target=open_browser_to_ui, daemon=True).start()
             user_text = ""
             for m in reversed(messages):
                 if m.get("role") == "user":
@@ -2322,7 +2611,7 @@ def already_running():
 
 def main():
     if already_running():
-        print(f"Port {config.PORT} already in use - another TOMMY server is running.")
+        print(f"Port {config.PORT} already in use - another KALKI server is running.")
         sys.exit(0)
 
     # Startup greeting (no API)
@@ -2471,12 +2760,41 @@ def main():
             time.sleep(60)
     threading.Thread(target=_calendar_alert_loop, daemon=True).start()
 
+    # ── Site Watchdog: proactive down / recovered / cert-expiry alerts ──
+    def _watchdog_loop():
+        time.sleep(45)
+        last = {}   # url -> {"up": bool, "cert_alerted": set()}
+        while True:
+            try:
+                for r in watchdog.check_all():
+                    url = r["url"]
+                    prev = last.get(url, {"up": True, "cert_alerted": set()})
+                    if not r["up"] and prev["up"]:
+                        speak(f"Alert, {config.OWNER_TITLE}. {r['host']} is down.")
+                        log(f"watchdog: {r['host']} DOWN ({r.get('error')})")
+                    elif r["up"] and not prev["up"]:
+                        speak(f"{r['host']} is back up, {config.OWNER_TITLE}.")
+                    alerted = set(prev.get("cert_alerted", set()))
+                    cd = r.get("cert_days")
+                    if cd is not None and cd >= 0:
+                        for th in (2, 7, 14):
+                            if cd <= th and th not in alerted:
+                                speak(f"Heads up, {config.OWNER_TITLE}. {r['host']} "
+                                      f"SSL certificate expires in {cd} days.")
+                                alerted.add(th)
+                                break
+                    last[url] = {"up": r["up"], "cert_alerted": alerted}
+            except Exception as e:
+                log(f"watchdog loop error: {e}")
+            time.sleep(getattr(config, "WATCHDOG_POLL_SEC", 600))
+    threading.Thread(target=_watchdog_loop, daemon=True).start()
+
     server = ThreadingHTTPServer(("127.0.0.1", config.PORT), Handler)
-    print(f"TOMMY server online -> http://localhost:{config.PORT}")
+    print(f"KALKI server online -> http://localhost:{config.PORT}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("Shutting down TOMMY server.")
+        print("Shutting down KALKI server.")
 
 if __name__ == "__main__":
     main()

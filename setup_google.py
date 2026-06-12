@@ -4,7 +4,7 @@ Run this ONCE with regular python.exe (not pythonw) so you can see the prompt
 and the browser auth flow.
 
 Usage:
-    py -3.11 C:\\Tommy\\setup_google.py
+    py -3.11 C:\\Kalki\\setup_google.py
 """
 
 import os
@@ -22,7 +22,7 @@ os.makedirs(os.path.dirname(gcal.CRED_PATH), exist_ok=True)
 
 def main():
     print("=" * 64)
-    print(" TOMMY - Google Calendar + Gmail OAuth Setup")
+    print(" KALKI - Google Calendar + Gmail OAuth Setup")
     print("=" * 64)
 
     if not os.path.exists(gcal.CRED_PATH):
@@ -63,7 +63,7 @@ def main():
     print(f"  {gm}")
 
     print("\n" + "=" * 64)
-    print("  All set, Sir. TOMMY now has Calendar + Gmail access.")
+    print("  All set, Sir. KALKI now has Calendar + Gmail access.")
     print("=" * 64)
 
 

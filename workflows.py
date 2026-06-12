@@ -1,5 +1,5 @@
 """
-TOMMY workflow modes — single-phrase action chains.
+KALKI workflow modes — single-phrase action chains.
 """
 
 import os
