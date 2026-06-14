@@ -924,7 +924,17 @@ def handle_local(text):
     # ════════════════════════════════════════════════════
     # WORKFLOW MODES (fuzzy match — handles STT mishearings)
     # ════════════════════════════════════════════════════
-    mode_matched = workflows.find_mode(t)
+    # Explicit commands must win over fuzzy mode-matching. A URL, a domain, or a
+    # clear action verb means "do this command", not "enter a mode" — otherwise
+    # "scan ctf.example.com" wrongly triggers CTF mode.
+    _explicit = ("://" in t
+                 or _re_local.search(r"\b[a-z0-9][a-z0-9-]*\.[a-z]{2,}\b", t)
+                 or _re_local.search(
+                     r"^(scan|analyz|analys|inspect|audit|play|open|remind|"
+                     r"download|decode|encode|hash|crack|watch|search|send|add|"
+                     r"show|set|take|lookup|find|check|what|when|where|who|how)\b",
+                     t))
+    mode_matched = None if _explicit else workflows.find_mode(t)
     if mode_matched:
         workflows.run_mode(
             mode_matched,

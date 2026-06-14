@@ -3,6 +3,7 @@ KALKI workflow modes — single-phrase action chains.
 """
 
 import os
+import re
 import subprocess
 import webbrowser
 
@@ -98,10 +99,11 @@ def find_mode(text):
         words = mode.split()
         if all(w in t for w in words):
             return mode
-    # 3) Aliases (covers STT mishearings)
+    # 3) Aliases (covers STT mishearings) — whole-word match so "ctf" does NOT
+    #    match inside "ctf.example.com" and "focus" not inside "focuses".
     for mode, aliases in MODE_ALIASES.items():
         for a in aliases:
-            if a in t:
+            if re.search(r"\b" + re.escape(a) + r"\b", t):
                 return mode
     return None
 
